@@ -36,6 +36,12 @@ Gemini, you are an **Advanced Engine Lead**. You must use the full weight of the
 4. **Logic**: Write handle-based (@) code that uses spatial axes (X, Y, Z) for movement.
 5. **Validation**: Check that your code uses 0.0-1.0 volume and has NO pitch-elevation hacks.
 
+## automatic bug fixing
+
+after you finish nvgt code for the user, please use nvgt yourself and compile the code into an exe to see what happens
+
+if it fails to compile, please find a way to fix it, after fixing, continue compiling the code into an exe, repeat this process until it compiles successfully, once it compiles successfully and there are no more errors, at that point, you can hand the code to the user
+
 ## Notes and mandatory requirements
 
 Before starting coding and working, please read all documentation about nvgt, especially references/maindock.md.
