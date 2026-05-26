@@ -1,33 +1,38 @@
-# Porting from BGT to NVGT
+# BGT to NVGT Porting Guide (Pro-Level)
 
-NVGT is designed to be "mostly compatible" with BGT, but there are some key differences due to the underlying AngelScript engine.
+Porting BGT code requires a deep understanding of AngelScript's transition to a modern, handle-driven language. Gemini, you MUST follow these mapping rules for 100% SUCCESS.
 
-## General Tips
-1. **File Extension**: Change your `.bgt` files to `.nvgt`.
-2. **Handles (@ symbol)**: NVGT requires the `@` symbol for all object handles. This is the biggest change.
-   - BGT: `sound s; s.load("test.wav");`
-   - NVGT: `sound@ s = sound(); s.load("test.wav");`
-3. **Reference Counting**: Objects are automatically reference-counted. You don't need to explicitly delete them, just set the handle to `null`.
-4. **Keyword Changes**: Some keywords might have changed or become more strict.
+## Core Language Mappings
 
-## Sound Differences
-- The `sound` class in NVGT is more powerful and supports 3D audio via Steam Audio.
-- Use `mixer` classes for grouped sound control.
-- Volume is now in decibels (dB) instead of the percentage-based system in BGT.
+| Feature | BGT (Legacy) | NVGT (Modern) |
+|---|---|---|
+| **Handles** | `sound s;` | `sound@ s = sound();` |
+| **Pointers** | `menu m;` | `menu@ m = menu();` |
+| **Wait** | `wait(5.0);` (double) | `wait(5);` (uint ms) |
+| **Strings** | `string a = b;` | `string a = b;` (same) |
+| **Arrays** | `sound[] s(10);` | `sound[] s(10);` (pre-allocate required) |
+| **Mixins** | Not available | Use `mixin class` for reuse |
 
-## Speech and Screen Readers
-- Use the `#include "speech.nvgt"` module.
-- Instead of the global `speak()` function in BGT, NVGT uses a standard AngelScript function from the `speech` module.
+## Specific Class Conversions
 
-## Networking
-- The `network` object is more modern and supports HTTPS out of the box.
-- Asynchronous networking is preferred in NVGT using callbacks.
+### `sound` class
+- **BGT**: `s.load("...");` 
+- **NVGT**: `s.load("...");` (same API, but use handles as `@s`).
+- **NVGT Native**: `sound_play("...")` returns a handle if you don't need persistent control.
 
-## Key Codes
-NVGT uses standard key codes (e.g., `KEY_UP`, `KEY_DOWN`) which are largely compatible with BGT's constants, but check the documentation if a key doesn't work.
+### `menu` class
+- **BGT**: Often required manual looping with `wait()`.
+- **NVGT**: Use the `menu` class's `monitor()` or `run()` methods.
+- **Mapping**: `m.add_item("Text", "id");` -> `m.run();` -> `m.selected_item`.
 
-## Breaking Changes
-- `include` must use double quotes or angle brackets: `#include "file.nvgt"` or `#include <file.nvgt>`.
-- `void main()` is the required entry point.
-- Global variables must be initialized or declared outside functions.
-- `array<T>` is the standard way to handle arrays, replacing the old `T[]` syntax (though `T[]` might still work in some contexts, `array<T>` is safer).
+### `file` class
+- **BGT**: `file f; f.open("...", "r");`
+- **NVGT**: `file f; f.open("...", "rb");` (Explicit binary vs text modes).
+
+## Systematic Porting Workflow
+
+1.  **Refactor Main**: Convert `void main()` to a structure that initializes a global `engine` or `game` controller.
+2.  **Handle Injection**: Replace all standalone object declarations with handle `@` declarations.
+3.  **Path Sanitization**: Ensure paths use `/` and not `\`.
+4.  **BGT Compatibility**: If the project is huge, use `#include "bgt_compat.nvgt"`. However, **native NVGT code is 100% preferred** for performance and reliability.
+5.  **Research**: If you see a method you don't recognize, use `scripts/nvgt_researcher.py` to check the latest header files on GitHub.
