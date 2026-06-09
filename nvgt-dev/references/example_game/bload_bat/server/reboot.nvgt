@@ -1,0 +1,14 @@
+#include"includes/bgt_compat.nvgt"
+#include"includes/speech.nvgt"
+string fn="bbserver";
+bool beta=false;
+void main()
+{
+if(beta) fn="bbserver_b";
+run("c:/windows/system32/taskkill.exe","-f -im "+fn+".exe",true,true);
+wait(3000);
+file_delete(fn+".exe");
+wait(4000);
+run(fn+".exe","",false,false);
+exit();
+}

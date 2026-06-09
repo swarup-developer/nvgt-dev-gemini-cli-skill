@@ -1,0 +1,95 @@
+corpse@[]corpses(0);
+class corpse
+{
+string oldinv;
+string id;
+corpse(dictionary@inv,string newid)
+{
+oldinv=dict_to_ini(inv);
+id=newid;
+}
+string list_contents()
+{
+string[] final_list;
+string list;
+string[] invvalues=string_split(oldinv,"\r\n",false);
+for(uint i=0; i<invvalues.length(); i++)
+{
+string[] inv2=string_split(invvalues[i],"=",false);
+string itemname=inv2[0];
+int itemamount=stn(inv2[1]);
+final_list.insert_last(itemamount+" "+(itemamount==1?itemname:itemname+"s"));
+}
+list=convert_to_list(final_list);
+return list;
+}
+void give_to(player@who)
+{
+if(@who!=null) {
+who.playsound("corpse_open");
+string[] invvalues=string_split(oldinv,"\r\n",false);
+for(uint i=0; i<invvalues.length(); i++)
+{
+string[] inv2=string_split(invvalues[i],"=",false);
+string itemname=inv2[0];
+int itemamount=stn(inv2[1]);
+if(string_left(itemname,5)=="ammo_") {
+string weaponname=string_trim_left(itemname,5);
+who.ammogive(weaponname,itemamount);
+}
+else
+who.give(inv2[0],stn(inv2[1]));
+}
+int corpseid=get_corpses_from(id);
+if(corpseid>-1) {
+corpses.remove_at(corpseid);
+}
+}
+}
+}
+int get_corpses_from(string the_id)
+{
+for(uint i=0; i<corpses.length(); i++)
+{
+if(corpses[i].id==the_id)
+{
+return i;
+}
+}
+return -1;
+}
+void new_corpse(dictionary@dic,string id)
+{
+corpse c1(dic,id);
+corpses.insert_last(c1);
+}
+void save_corpses()
+{
+string final;
+for(uint i=0; i<corpses.length(); i++)
+{
+final+=corpses[i].id+"[]"+corpses[i].oldinv+"+++";
+}
+fl.open("corpses.svr","wb");
+fl.write(string_encrypt(final,prefskey));
+fl.close();
+}
+void load_corpses()
+{
+if(!file_exists("corpses.svr"))
+return;
+fl.open("corpses.svr","rb");
+string sdata=fl.read();
+fl.close();
+if(sdata=="") return;
+sdata=string_decrypt(sdata,prefskey);
+string[] c=string_split(sdata,"+++",false);
+for(uint i=0; i<c.length(); i++)
+{
+string[] c2=string_split(c[i],"[]",false);
+dictionary newinv=deserialize(c2[1]);
+string id=c2[0];
+corpse crp(newinv,id);
+corpses.insert_last(crp);
+}
+}

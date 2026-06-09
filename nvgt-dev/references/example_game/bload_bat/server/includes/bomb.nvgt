@@ -1,0 +1,61 @@
+bomb@[] bombs(0);
+class bomb
+{
+int x;
+int y;
+int z;
+string map;
+string owner;
+timer falltimer;
+int falltime=2750;
+bomb(int bx, int by, int bz, string bmap, string bowner)
+{
+x=bx;
+y=by;
+z=bz;
+map=bmap;
+owner=bowner;
+play("bombfall",x,y,z,map);
+}
+}
+void bombloop()
+{
+for(uint i=0; i<bombs.length(); i++)
+{
+if(bombs[i].falltimer.elapsed>bombs[i].falltime)
+{
+play("bombexplode",bombs[i].x,bombs[i].y,bombs[i].z,bombs[i].map);
+send_reliable(0,"distsound bombexplodedist "+bombs[i].x+" "+bombs[i].y+" "+bombs[i].z+" "+bombs[i].map,0);
+for(uint p=0; p<players.length(); p++)
+{
+if(players[p].dead or players[p].invinsible or players[p].safe) continue;
+if(get_3d_distance(players[p].x,players[p].y,players[p].z,bombs[i].x,bombs[i].y,bombs[i].z)<=30 and players[p].map==bombs[i].map)
+{
+players[p].health-=random(500, 1000);
+players[p].hitby=bombs[i].owner+"'s bomb";
+players[p].play_hit_sound();
+}
+}
+for(uint o=0; o<objs.length(); o++)
+{
+if(get_3d_distance(objs[o].x,objs[o].y,objs[o].z,bombs[i].x,bombs[i].y,bombs[i].z)<=30 and objs[o].map==bombs[i].map)
+{
+send_reliable(0,"remitem "+objs[o].id,0);
+play("itembreak"+random(1,3),objs[o].x,objs[o].y,objs[o].z,objs[o].map);
+objs.remove_at(o);
+}
+}
+bombs.remove_at(i);
+continue;
+}
+}
+}
+void spawn_bomb(int x, int y, int z, string map, string owner)
+{
+bomb b(x, y, z, map, owner);
+bombs.insert_last(b);
+}
+void destroy_all_bombs()
+{
+bombs.resize(0);
+}

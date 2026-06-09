@@ -1,0 +1,116 @@
+string version="0.80";
+string clog="
+New in 0.80
+We now save server data every 30 seconds.
+New in 0.72
+Makes players who are stuck in the sz be moved automaticly.
+More attempts on lag with large number of players.
+Makes the rifle not have so much range, and makes knife have slightly better damage.
+Since it is apparent there is a full admin team now, you can type /adminsend to send a message to the administration team.
+Yes everyone, ammo should finally spawn in your corpses!
+Good bye, ghoast items!
+Adds wirebombs! These are bombs with electric wires sticking out,and any player, including you, gets in range of them, will be stunned and fall to the ground!
+Adds potions!
+The machinegun has been modified to be less OP and the shotgun was modified with more spread and range per popular request.
+Finally, you can grab ammo from corpses!
+New in 0.71
+Changes admin things.
+Lowered the insane spread of the machinegun.
+Fixes autofiring bug.
+Removes nicknames.
+Guess what, even more lag improvements. This should help with the weapons, and might even help when there are a lot of players connected.
+Fixed a bug where if you were stunned and something happened, like the server updating or rebooting, you would stay stunned when you logged back in.
+Some changes to weapons. It may take some getting used to, but this new setup should be a lot more fair.
+Ultrabombs now only take away 500 hp, and are limited to a 210 tile distance.
+Now rounding the player coordinates. This should fix a lot of weird bugs with the shift enter key.
+Speeds up automatic weapons.
+adds /bestplayer.
+Makes update_player unreliable.
+Makes it so when the player dies, it stops tracking them if you are tracking them.
+Per popular request, made it so the ultrabomb explode sound is only audible when you are on the same map as the ultrabomb exploding.
+Fixed online and offline messages.
+Fixes a nasty runtime error that kept crashing the server.
+Fixes the /pm, /r, and /reply commands.
+Slows down weapons.
+Slows down beacons a little.
+Added a /garbage command for admins to help reduce lag.
+Tries to fix lag when you get hit by a player.
+Fixes broken corpses being listed in a very fucked up format.
+Changes the way players are tracked, so your client might freak out.
+Redid some code to help with lag.
+I know this is like the 30000th update in the last 30 minutes, but I'm trying to get this lag under control.
+Whenever you die, you get some ammo to work with.
+Inventory updating fixes.
+Even more lag improvements.
+Lag improvements.
+Disables beacons completely.
+Hopefully fixed the game crashing after being killed by poison.
+Made admin flags save when logging off.
+New in 0.7
+Added a completely new ammo system to the game.
+Removes tracking messages as people were tracking players over and over to spam.
+Makes tracking sorted based on the players near you.
+Modified machinegun.
+Adds the good old distant sounds.
+Adds proper kill messages.
+New in 0.6
+Note: You must hbe on the latest version of bloodbath for the game to work properly.
+Adds corpses players can pick up after you die.
+Makes automatic weapons be handled the way they're suppose to be handled. No more sending 30000 packets to fire the tiny mg. Have fun with less lag! Now we are actually almost ready for public beta 1!
+Added food items you can eat. Right now you have banana bread, bacon strips, and breakfast, lunch and dinner options.
+Major changes to the way weapons were handled. If this works well, there will be changes to the way every item in the game is handled.
+Removed enemies.
+New in 0.5
+Fixed some important bugs.
+Added nicknames! Type /nickname to set yours!
+New in 0.41
+Made the hunger system a lot more fair.
+Lowered the damage of the machinegun a bit.
+Fixed the bomb launcher powerup sound's timing.
+New in 0.4
+Added a food system. Note that this is still incomplete and there for may have bugs.
+New in 0.35
+Removed the safe zone laser as it is no inter needed.
+Enemies should no inter target you if you are on a different map.
+New in 0.34
+Runtime error fixes.
+Trys to balance out the vulcan minigun.
+New in 0.33
+Finally added the int needed /changemap /changemymap and /newmap commands.
+New in 0.32
+Refactered a lot of the death code, adding the possibility for you to get kills when killing players with bombs or items, etc etc etc.
+Fixed the used weapon wasn't showing in the AI's death message.
+New in 0.31
+Fixed poisonstar's loops not removing when they were shot.
+Finally added counters for kills and deaths!
+You now lose your inventory after death.
+New in 0.3
+Does a lot of work to enemies. Enemies should no inter be able to enter the safe zone. They can also hit other enemies now.
+Now if an enemy is targeting you and you switch maps, the enemy will attempt to switch targets to another random player. If there is no one else it can go after, it will be removed.
+Tries to fix the completely broken bomb launchers.
+Fires can no inter exist on carpet or water, reality is good for you.
+Makes sure things that shouldn't be able to hit you inside the safe zone can not.
+You can now see what weapon someone is killed with!
+New in 0.25
+Recodes a lot of the play function, fixing lots of bugs.
+New in 0.24
+Fixed a very stupid bug with playing menu sounds.
+New in 0.23
+Added a /go command for builders.
+New in 0.22
+Fixed a stupid runtime error when kicking people.
+New in 0.21
+Added the /admins command.
+Fixed a runtime error that would crash the server when an enemy stepped on a mine, thanks ivan.
+New in 0.2
+Hopefully fixed bomb launchers targeting multiple players if more than one player was in range.
+Added some map code to the server.
+Rewrote item spawning code, adding much more flexibility for builders.
+New in 0.12
+Fixed kicking ghost players being breaky.
+Items now self destruct after 60 seconds.
+New in 0.11
+Fixes weird things with bomb launchers and cleans up code for those things.
+Adds the /changes command.
+Players now get removed if they lose connection.
+";

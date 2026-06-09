@@ -1,0 +1,22 @@
+﻿sound dlgaudio;
+void dlgplay(string dlgsound, bool dlgfade=false, int fadespeed=30, bool is_file=true)
+{
+if(is_file)
+dlgaudio.load(dlgsound);
+dlgaudio.play();
+while(dlgaudio.playing)
+{
+wait(5);
+if(spd.is_hacking(200)==true)
+kill_speedhacker();
+if(key_pressed(KEY_RETURN))
+{
+if (dlgfade==true)
+{
+fade(dlgaudio, -80, fadespeed);
+}
+dlgaudio.stop();
+break;
+}
+}
+}

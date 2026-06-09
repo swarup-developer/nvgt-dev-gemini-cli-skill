@@ -1,0 +1,165 @@
+string[] guns={"shotgun","pistol","machinegun","tiny_mg", "rifle", "rocket_launcher"};
+weapon@[]weapons(0);
+class weapon {
+double x,y,z;
+int dir=0;
+string type;
+timer speedtimer;
+int speedtime;
+int range;
+int distance=0;
+int mindammage=50;
+int maxdammage=1000;
+string map;
+player@owner;
+int spread=0;
+bool bullet=true;
+weapon(double bx, double by, double bz, double bdir, string btype, string bmap,player@p)
+{
+x=bx;
+y=by;
+z=bz;
+dir=bdir;
+type=btype;
+@owner=p;
+map=bmap;
+if(type=="fists")
+{
+bullet=false;
+range=3;
+speedtime=50;
+mindammage=5;
+maxdammage=30;
+spread=3;
+}
+else if(type=="knife")
+{
+bullet=false;
+speedtime=50;
+range=5;
+mindammage=90;
+maxdammage=120;
+spread=5;
+}
+else if(type=="pistol")
+{
+bullet=true;
+speedtime=5;
+range=12;
+mindammage=100;
+maxdammage=200;
+spread=5;
+}
+else if(type=="tiny_mg")
+{
+bullet=true;
+speedtime=5;
+range=30;
+mindammage=40;
+maxdammage=80;
+spread=5;
+}
+else if(type=="machinegun")
+{
+bullet=true;
+speedtime=5;
+range=9;
+mindammage=10;
+maxdammage=100;
+spread=4;
+}
+else if(type=="rifle") {
+bullet=false;
+range=100;
+mindammage=150;
+maxdammage=600;
+speedtime=20;
+spread=3;
+}
+else if(type=="rocket_launcher") {
+bullet=false;
+range=100;
+mindammage=0;
+maxdammage=0;
+speedtime=10;
+spread=5;
+}
+else if(type=="shotgun")
+{
+bullet=true;
+speedtime=10;
+range=15;
+mindammage=50;
+maxdammage=250;
+spread=8;
+}
+}
+}
+void weaponloop()
+{
+for(uint j=0; j<weapons.length(); j++)
+{
+if(weapons[j].speedtimer.elapsed>=weapons[j].speedtime)
+{
+weapons[j].speedtimer.restart();
+vector wr;
+wr=move(weapons[j].x,weapons[j].y,weapons[j].dir);
+weapons[j].x=wr.x;
+weapons[j].y=wr.y;
+int rx=round(weapons[j].x, 0);
+int ry=round(weapons[j].y, 0);
+weapons[j].distance++;
+if(weapons[j].distance > weapons[j].range)
+{
+if(weapons[j].type=="rocket_launcher") spawn_rocket(weapons[j].x, weapons[j].y, weapons[j].z, weapons[j].map, weapons[j].owner);
+@weapons[j]=null;
+weapons.remove_at(j);
+continue;
+}
+bool hit=false;
+string sendtext="";
+if(get_tile_at(rx, ry, weapons[j].z, weapons[j].map)=="tree" or string_contains(get_tile_at(rx, ry, weapons[j].z, weapons[j].map), "wall", 1)>-1)
+{
+if(weapons[j].bullet==true)
+play("rico"+random(1, 5), rx, ry, weapons[j].z, weapons[j].map);
+else
+play(weapons[j].type+"rico", rx, ry, weapons[j].z, weapons[j].map);
+@weapons[j]=null;
+weapons.remove_at(j);
+continue;
+}
+for(uint x=0; x<players.length(); x++)
+{
+if(players[x].dead or players[x].invinsible or players[x].safe) continue;
+if(get_3d_distance(rx, ry, weapons[j].z, players[x].x, players[x].y, players[x].z)<=weapons[j].spread and @weapons[j].owner!=@players[x] and players[x].map==weapons[j].map)
+{
+hit=true;
+int inpact=random(weapons[j].mindammage,weapons[j].maxdammage);
+players[x].health-=inpact;
+if(weapons[j].bullet) play("body"+random(1,6),players[x].x,players[x].y,players[x].z,players[x].map,players[x]);
+else play(weapons[j].type+"hit",players[x].x,players[x].y,players[x].z,players[x].map,players[x]);
+if(weapons[j].type!="rocket_launcher")
+players[x].play_hit_sound();
+players[x].hitby=weapons[j].owner.name+"'s "+weapons[j].type;
+if(weapons[j].type=="rocket_launcher") spawn_rocket(players[x].x, players[x].y, players[x].z, players[x].map, weapons[j].owner);
+}
+}
+if(hit)
+{
+player@pindex=weapons[j].owner;
+if(@pindex!=null)
+{
+send_reliable(pindex.peer_id,"play_s weaponping.ogg",0);
+}
+@weapons[j]=null;
+weapons.remove_at(j);
+continue;
+}
+}
+}
+}
+void spawn_weapon(double x, double y, double z, double dir, string type, string map, player@owner)
+{
+weapon w1(x, y, z, dir, type, map, owner);
+weapons.insert_last(w1);
+}

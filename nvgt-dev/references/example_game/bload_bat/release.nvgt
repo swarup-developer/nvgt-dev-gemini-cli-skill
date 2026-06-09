@@ -1,0 +1,14 @@
+#include "bgt_compat.nvgt"
+void main()
+{
+directory_delete("bloodbath");
+directory_create("bloodbath");
+file_copy("changelog.txt","bloodbath/changelog.txt",true);
+file_copy("readme.txt","bloodbath/readme.txt",true);
+file_copy("!rules.txt","bloodbath/!rules.txt",true);
+file_copy("GameEngine.dll","bloodbath/GameEngine.dll",true);
+file_copy("nvdaControllerClient32.dll","bloodbath/nvdaControllerClient32.dll",true);
+file_copy("sounds.dat","bloodbath/sounds.dat",true);
+file_copy("bloodbath.exe","bloodbath/bloodbath.exe",true);
+file_copy("updater.exe","bloodbath/updater.exe",true);
+}

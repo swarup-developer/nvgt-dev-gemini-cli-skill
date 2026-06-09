@@ -1,0 +1,70 @@
+poisonstar@[] poisonstars(0);
+class poisonstar
+{
+int x, y, z;
+string map;
+string owner;
+string loop;
+timer movetimer;
+int movetime=150;
+poisonstar(int px, int py, int pz, string pmap, string powner)
+{
+x=px;
+y=py;
+z=pz;
+map=pmap;
+owner=powner;
+loop=spawn_moving_sound("poisonloop.ogg",x,y,z,map);
+play("poisonlaunch",x,y,z,map);
+}
+}
+void poisonstarloop()
+{
+for(uint i=0; i<poisonstars.length(); i++)
+{
+int pindex=get_player_index_from(poisonstars[i].owner);
+int index=get_nearest_player(poisonstars[i].x, poisonstars[i].y, poisonstars[i].z, poisonstars[i].map, pindex);
+if(index>-1)
+{
+if(poisonstars[i].movetimer.elapsed>poisonstars[i].movetime and players[index].dead==false and players[index].invinsible==false and players[index].safe==false)
+{
+poisonstars[i].movetimer.restart();
+if(poisonstars[i].x<players[index].x)
+poisonstars[i].x++;
+else if(poisonstars[i].x>players[index].x)
+poisonstars[i].x--;
+else if(poisonstars[i].y<players[index].y)
+poisonstars[i].y++;
+else if(poisonstars[i].y>players[index].y)
+poisonstars[i].y--;
+update_moving_sound(poisonstars[i].loop, poisonstars[i].x, poisonstars[i].y, poisonstars[i].z);
+}
+if(poisonstars[i].x==players[index].x and poisonstars[i].y==players[index].y and poisonstars[i].z==players[index].z and poisonstars[i].map==players[index].map and players[index].name!=poisonstars[i].owner and players[index].invinsible==false and players[index].safe==false)
+{
+play("poisonhit",players[index].x, players[index].y, players[index].z, players[index].map, players[index]);
+players[index].health-=random(150, 450);
+players[index].hurttimer.restart();
+players[index].poisoned=true;
+players[index].hitby=poisonstars[i].owner+"'s poisonstar";
+players[index].play_hit_sound();
+int ind2=get_player_index_from(poisonstars[i].owner);
+if(ind2>-1)
+{
+send_reliable(players[ind2].peer_id,"Your poisonstar successfully poisoned "+players[index].name+"!",2);
+}
+destroy_moving_sound(poisonstars[i].loop);
+poisonstars.remove_at(i);
+continue;
+}
+}
+}
+}
+void spawn_poisonstar(int x, int y, int z, string map, string owner)
+{
+poisonstar p(x, y, z, map, owner);
+poisonstars.insert_last(p);
+}
+void destroy_all_poisonstars()
+{
+poisonstars.resize(0);
+}

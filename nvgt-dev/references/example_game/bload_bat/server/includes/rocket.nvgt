@@ -1,0 +1,40 @@
+rocket@[]rockets(0);
+class rocket {
+bool exploded=false;
+string map;
+int x, y, z;
+string owner;
+timer rockettimer;
+rocket(int rx, int ry, int rz, string rmap, string rowner) {
+x=rx;
+y=ry;
+z=rz;
+map=rmap;
+owner=rowner;
+play("rocketincoming", x, y, z, map);
+}
+}
+void rocketloop() {
+for(uint i=0; i<rockets.length(); i+=1) {
+if(rockets[i].rockettimer.elapsed>=2500 and rockets[i].exploded==false) {
+rockets[i].exploded=true;
+play("rocketexplode", rockets[i].x, rockets[i].y, rockets[i].z, rockets[i].map);
+send_unreliable_x(0,"distsound rocketexplodedist "+rockets[i].x+" "+rockets[i].y+" "+rockets[i].z+" "+rockets[i].map,0,rockets[i].x, rockets[i].y, rockets[i].z);
+for(uint i2=0; i2<players.length(); i2+=1) {
+if(rockets[i].map!=players[i2].map or players[i2].dead or players[i2].safe) continue;
+if(get_3d_distance(players[i2].x, players[i2].y, players[i2].z, rockets[i].x, rockets[i].y, rockets[i].z)<=15) {
+play("rockethit",players[i2].x, players[i2].y, players[i2].z, players[i2].map, players[i2]);
+players[i2].hitby=rockets[i].owner+"'s rocket";
+players[i2].health-=random(400, 800);
+}
+}
+@rockets[i]=null;
+rockets.remove_at(i);
+break;
+}
+}
+}
+void spawn_rocket(int x, int y, int z, string map, player@name) {
+rocket r1(x, y, z, map, name.name);
+rockets.insert_last(r1);
+}

@@ -1,0 +1,2673 @@
+#include"includes/bgt_compat.nvgt"
+#include"includes/minilocker.nvgt"
+#include"includes/sd.nvgt"
+#include"includes/team.nvgt"
+#include"includes/wirebomb.nvgt"
+#include"includes/rocket.nvgt"
+#include"includes/timepacket.nvgt"
+#include"includes/functions.nvgt"
+#include"includes/banner.nvgt"
+#include"includes/corpses.nvgt"
+#include"includes/poisonstar.nvgt"
+#include"includes/ultrabomb.nvgt"
+#include"includes/timeitem.nvgt"
+#include"includes/server_menu.nvgt"
+#include"includes/multiversion.nvgt"
+#include"includes/stuff.nvgt"
+#include"includes/mine.nvgt"
+#include"includes/bodyfall.nvgt"
+#include"includes/map.nvgt"
+#include"includes/changelog.nvgt"
+#include"includes/fire.nvgt"
+#include"includes/moving_sound_serverside_handler.nvgt"
+#include"includes/bomb.nvgt"
+#include"includes/bomb_launcher.nvgt"
+#include"includes/readable_time.nvgt"
+#include"includes/timebomb.nvgt"
+#include"includes/item.nvgt"
+#include"includes/dateandtime.nvgt"
+#include"includes/logger.nvgt"
+#include"includes/weapon.nvgt"
+#include "includes/player.nvgt"
+#include "includes/rotation.nvgt"
+#include "includes/speech.nvgt"
+string minver="0.996";
+bool beta=true;
+timer uptimer;
+timer savetimer;
+file fl;
+bool updating=false;
+int cid=-1;
+int port=32145;
+network n;
+network_event e;
+dictionary fooditems;
+const string prefskey="b.tch.fuck";
+string[] killmsgs;
+void main()
+{
+start_profiling();
+load_bans();
+load_server_data();
+if(beta==true)
+{
+port=32123;
+}
+init_mapsystem();
+setupserver();
+n.setup_server(port, 20, 500);
+speak("server active");
+show_window("Bloodbath server");
+uptimer.restart();
+while(true)
+{
+wait(5);
+if(savetimer.elapsed>=30000) {
+savetimer.restart();
+save_all_chars();
+save_corpses();
+save_lockers();
+save_teams();
+}
+maploop();
+netloop();
+if(players.length()==0)
+{
+destroy_all_objs();
+}
+if(file_exists("update.txt") and updating==false)
+{
+speak("Starting update process...");
+updating=true;
+save_all_chars();
+save_corpses();
+save_lockers();
+save_teams();
+send_reliable(0,"updating",0);
+wait(5000);
+run("updater.exe","",false,false);
+exit();
+}
+if(key_pressed(KEY_ESCAPE))
+{
+speak("The server is shutting down. Disconnecting players...");
+save_all_chars();
+save_corpses();
+save_lockers();
+save_teams();
+for(uint i=0; i<players.length(); i++)
+{
+remove_from_server(i);
+}
+wait(3000);
+exit();
+}
+}
+}
+void netloop()
+{
+timepacketloop();
+poisonstarloop();
+teamloop();
+lockerloop();
+wirebombloop();
+ultrabombloop();
+mineloop();
+bodyfallloop();
+fireloop();
+bombloop();
+bomblauncherloop();
+timeitemloop();
+timebombloop();
+rocketloop();
+objloop();
+playerloop();
+weaponloop();
+e=n.request();
+if(e.type==event_disconnect) {
+int px=get_player_index(e.peer_id);
+if(px>-1) {
+send_reliable(0,players[px].name+" has lost connection to the server.",2);
+remove_from_server(px);
+}
+}
+if(e.type==event_receive)
+{
+if (e.channel==1)
+{
+string[] parsed=string_split(get_event_message(), " ",true);
+if (e.channel==1)
+{
+string[] parsed=string_split(get_event_message(), " ",true);
+int index=get_player_index(e.peer_id);
+if (index>-1)
+{
+string message=get_event_message();
+if (string_left(get_event_message(),1)!="/")
+{
+if(get_event_message().length()>5000)
+{
+send_reliable(players[index].peer_id,"Message is too int",0);
+return;
+}
+log(players[index].name+"_chats",players[index].name+" said "+get_event_message());
+string chatmessage=get_event_message();
+string chatmess;
+if(players[index].title!="") chatmess+=players[index].title+" ";
+if(players[index].teamname!="") chatmess+=players[index].teamname+" ";
+chatmess+=players[index].name+": "+chatmessage;
+players[index].chat(chatmess);
+return;
+}
+else
+{
+if(index>-1)
+log(players[index].name+"_commands",players[index].name+" sent "+get_event_message());
+}
+int index=get_player_index(e.peer_id);
+if (index>-1)
+{
+if (parsed[0]=="/where" and parsed.length()>=2 and players[index].is_admin())
+ {
+int index2=get_player_index_from(parsed[1]);
+if (index2==-1)
+send_reliable(e.peer_id,"Not found",2);
+else
+send_reliable(e.peer_id,players[index2].name+" is at "+players[index2].x+", "+players[index2].y+", "+players[index2].z,2);
+}
+else if(parsed[0]=="/lockers") {
+string orig;
+orig=lockers.length()+" lockers";
+if(players[index].dev==true) {
+orig+=". ";
+string[] set;
+for(uint i=0; i<lockers.length(); i+=1) {
+set.insert_last("Locker "+lockers[i].lockid+" beinting to "+lockers[i].owner+" located at "+lockers[i].x+", "+lockers[i].y+", "+lockers[i].z+" on map "+lockers[i].map);
+}
+orig+=convert_to_list(set);
+}
+players[index].packet(orig);
+}
+else if(parsed[0]=="/chars")
+{
+if(players[index].is_admin())
+{
+string[] chars=find_directories("chars/*");
+server_menu m;
+m.initial_packet="charsmenu";
+m.intro="Chars list. There are currently "+chars.length()+" chars.";
+for(uint i=0; i<chars.length(); i++)
+{
+m.add(chars[i], chars[i]);
+}
+m.send(players[index].peer_id);
+}
+else
+send_reliable(players[index].peer_id,"You must be an admin to view chars.",0);
+}
+else if(parsed[0]=="/bestplayer")
+{
+string ret;
+int bx=get_best_player();
+if(bx>-1)
+{
+if(players[bx].name==players[index].name) ret="You are the best player with "+players[bx].kills+" kills";
+else
+ret="The best player is "+players[bx].name+" with "+players[bx].kills+" kils";
+}
+send_reliable(players[index].peer_id,ret,2);
+}
+else if(parsed[0]=="/garbage")
+{
+if(players[index].is_admin())
+{
+send_reliable(0,"notify Warning! "+players[index].name+" just initiated a server garbage collection to reduce lag. The server may lag for a moment, please do not disconnect.",0);
+garbage_collect();
+}
+else
+send_reliable(players[index].peer_id,"You may not collect garbage, your wage is too high for that. We're not selling ourselves short here.",0);
+}
+else if(parsed[0]=="/adminflag")
+{
+if(players[index].is_admin())
+{
+if(players[index].title=="Administrator" or players[index].title=="Developer")
+{
+players[index].title="";
+players[index].packet("Ok, your admin flag is now disabled.",0);
+}
+else
+{
+if(players[index].dev)
+players[index].title="developer";
+else
+players[index].title="Administrator";
+players[index].packet("Ok, your admin flag is now enabled.",0);
+}
+}
+else
+players[index].packet("You are not even an admin...",0);
+}
+else if(parsed[0]=="/getinv" and parsed.length()==2 and players[index].is_admin()) {
+int index2=get_player_index_from(parsed[1]);
+if(index2==-1) {
+players[index].packet("error: player not found, try again");
+return;
+}
+else
+players[index].packet(dict_to_ini(players[index2].inv));
+}
+else if(parsed[0]=="/profilestop" and players[index].dev) {
+generate_profile("pro.log");
+players[index].packet(file_get_contents("pro.log"));
+}
+else if(parsed[0]=="/serverreport") {
+uint peers=n.get_peer_list().length();
+send_reliable(players[index].peer_id,"Server report: date report generated: "+get_date()+" at "+get_time()+".\r\nThe server has been running for "+ms_to_readable_time(uptimer.elapsed)+". There are "+peers+" peers connected to the server, with "+players.length()+" players logged in.\r\nItem report: "+objs.length()+" items spawned on the map",2);
+}
+else if(parsed[0]=="/reboot")
+{
+if(players[index].is_admin())
+{
+send_reliable(0,"rebooting",0);
+save_all_chars();
+save_corpses();
+save_lockers();
+save_teams();
+wait(3000);
+run(get_script_path(), "--r", false, false);
+exit();
+}
+else
+{
+send_reliable(players[index].peer_id,"You may not reboot the server!",0);
+}
+}
+else if(parsed[0]=="/exit")
+{
+if(players[index].dev)
+{
+send_reliable(0,"exiting",0);
+wait(3000);
+save_all_chars();
+save_corpses();
+save_lockers();
+save_teams();
+generate_profile("p.log");
+exit();
+}
+else
+{
+send_reliable(players[index].peer_id,"You are not allowed to exit the server!",0);
+}
+}
+else if(parsed[0]=="/compinfolog" and players[index].is_admin()==true) send_reliable(players[index].peer_id,file_get_contents("compinfo.log"),2);
+else if(parsed[0]=="/compinfo" and parsed.length()>1)
+{
+if(players[index].is_admin())
+{
+int ind2=get_player_index_from(parsed[1]);
+if(ind2<0)
+send_reliable(players[index].peer_id,"Not found.",0);
+else
+{
+send_reliable(players[index].peer_id,players[ind2].compinfo,2);
+}
+}
+else
+send_reliable(players[index].peer_id,"You must be an admin or higher to view a player's computer info!",0);
+}
+else if(parsed[0]=="/ban" and parsed.length()>1)
+{
+if(players[index].is_admin())
+{
+int ind2=get_player_index_from(parsed[1]);
+if(ind2<0)
+{
+send_reliable(players[index].peer_id,"player not found.",0);
+}
+else
+{
+if(players[ind2].dev)
+{
+send_reliable(players[index].peer_id,"You can't ban a dev!",0);
+send_reliable(players[ind2].peer_id,"notify Warning! The player "+players[index].name+" just tried to ban you!",0);
+return;
+}
+bool success=comp_ban(ind2);
+if(success==false)
+{
+send_reliable(players[index].peer_id,"That player can not be banned.",0);
+}
+else
+{
+remove_from_server(ind2);
+}
+}
+}
+else
+{
+send_reliable(players[index].peer_id,"You must be an admin or higher to ban players.",0);
+}
+}
+else if(parsed[0]=="/unban" and parsed.length()>1)
+{
+if(players[index].is_admin())
+{
+bool success=comp_unban(parsed[1]);
+if(success)
+{
+send_reliable(players[index].peer_id,"Player successfully unbanned.",0);
+}
+else
+{
+send_reliable(players[index].peer_id,"Error.",0);
+}
+}
+else
+{
+send_reliable(players[index].peer_id,"You must be an admin or higher to unban players.",0);
+}
+}
+else if(parsed[0]=="/banned")
+{
+if(players[index].is_admin())
+{
+send_reliable(players[index].peer_id,get_comp_bans(),0);
+}
+else
+{
+send_reliable(players[index].peer_id,"You must be at least an admin to view banned players.",0);
+}
+}
+else if(parsed[0]=="/newmap" and parsed.length()>5)
+{
+if(players[index].is_builder())
+{
+string mapname=parsed[1];
+int maxx=stn(parsed[2]);
+int maxy=stn(parsed[3]);
+int maxz=stn(parsed[4]);
+string defsurface=parsed[5];
+if(file_exists("maps/"+mapname+".map"))
+{
+send_reliable(players[index].peer_id,"A map with that name already exists.",0);
+return;
+}
+file f;
+f.open("maps/"+mapname+".map","wb");
+f.write("mapname:"+mapname+"
+maxx:"+maxx+"
+maxy:"+maxy+"
+maxz:"+maxz+"
+platform:0:"+maxx+":0:"+maxy+":0:"+defsurface+"
+");
+f.close();
+move_player(index, 0, 0, 0, mapname);
+}
+else
+send_reliable(players[index].peer_id,"You must be at least a builder to create new maps on the server.",0);
+}
+else if(parsed[0]=="/changemap" and parsed.length()>2)
+{
+if(players[index].is_admin())
+{
+int ind2=get_player_index_from(parsed[1]);
+if(ind2<0)
+send_reliable(players[index].peer_id,"That player either is not currently online, or not a valid player.",0);
+else
+{
+move_player(ind2,0,0,0,parsed[2],false);
+send_reliable(players[index].peer_id,"Done",0);
+}
+}
+else
+send_reliable(players[index].peer_id,"You must be an admin or higher to change players maps.",0);
+}
+else if(parsed[0]=="/changemymap" and parsed.length()>1)
+{
+if(players[index].is_builder())
+{
+move_player(index, 0, 0, 0, parsed[1], false);
+}
+else
+send_reliable(players[index].peer_id,"You must be a builder or higher to force change your map.",0);
+}
+else if(parsed[0]=="/sleep" and players[index].dev==true and parsed.length()==2) {
+int index2=get_player_index_from(parsed[1]);
+if(index2==-1) {
+send_reliable(players[index].peer_id,"Not found",0);
+return;
+}
+else {
+send_reliable(players[index].peer_id,"Done",0);
+players[index2].sleep("good night...");
+}
+}
+else if(parsed[0]=="/fadeout")
+{
+if(players[index].dev)
+{
+send_reliable(players[index].peer_id,"fadeoutsound",0);
+send_reliable(players[index].peer_id,"done",0);
+}
+}
+else if(parsed[0]=="/fadein")
+{
+if(players[index].dev)
+{
+send_reliable(players[index].peer_id,"Done",0);
+send_reliable(players[index].peer_id,"fadeinsound",0);
+}
+}
+else if(parsed[0]=="/pm" and parsed.length()>1)
+{
+int ind2=get_player_index_from(parsed[1]);
+if(ind2<0)
+send_reliable(players[index].peer_id,"Player not found",0);
+else
+{
+string message=string_replace(get_event_message(),parsed[0]+" "+parsed[1]+" ","",false);
+send_reliable(players[ind2].peer_id,"pm PM from "+players[index].name+": "+message,0);
+players[ind2].replyname=players[index].name;
+send_reliable(players[index].peer_id,"pm Your PM to "+players[ind2].name+": "+message,0);
+}
+}
+else if(parsed[0]=="/reply" or parsed[0]=="/r")
+{
+int ind2=get_player_index_from(players[index].replyname);
+if(ind2<0)
+send_reliable(players[index].peer_id,players[index].replyname+" is not online at the moment. Please try again later.",0);
+else
+{
+string message;
+if(parsed[0]=="/reply")
+message=string_replace(get_event_message(),"/reply ","",false);
+else
+message=string_replace(get_event_message(),"/r ","",false);
+send_reliable(players[ind2].peer_id,"pm Reply from "+players[index].name+": "+message,0);
+send_reliable(players[index].peer_id,"pm You reply to "+players[ind2].name+": "+message,0);
+players[ind2].replyname=players[index].name;
+}
+}
+else if(parsed[0]=="/go" and parsed.length()>3)
+{
+if(players[index].is_builder())
+{
+move_player(index,stn(parsed[1]),stn(parsed[2]),stn(parsed[3]),players[index].map);
+send_reliable(players[index].peer_id,"done",0);
+}
+else
+{
+send_reliable(players[index].peer_id,"You are not allowed to move yourself.",0);
+}
+}
+else if(parsed[0]=="/admins")
+{
+string[] admins=get_admin_list();
+string[] a;
+int online=0;
+string message;
+for(uint i=0; i<admins.length(); i++)
+{
+if(is_on_server(admins[i]))
+{
+online++;
+a.insert_last(admins[i]+" (online)");
+}
+else
+{
+a.insert_last(admins[i]);
+}
+}
+message=admins.length()+" admins, "+online+" online. "+convert_to_list(a);
+send_reliable(players[index].peer_id,message,2);
+}
+else if(parsed[0]=="/latest_runtime")
+{
+if(players[index].dev)
+{
+if(!file_exists("latest_runtime.txt"))
+{
+send_reliable(players[index].peer_id,"No runtime as of now. Maybe you do actually know how to code after all.",0);
+return;
+}
+file f;
+f.open("latest_runtime.txt","rb");
+string data=f.read();
+f.close();
+send_reliable(players[index].peer_id,data,2);
+}
+else
+{
+send_reliable(players[index].peer_id,"You may not view the server's runtimes.",0);
+}
+}
+else if(parsed[0]=="/runtimes")
+{
+if(players[index].dev)
+{
+if(!file_exists("runtimes.txt"))
+{
+send_reliable(players[index].peer_id,"The server hasn't runtimed at all. How fucking awesome is that.",0);
+return;
+}
+file f;
+f.open("runtimes.txt","rb");
+string data=f.read();
+f.close();
+send_reliable(players[index].peer_id,data,2);
+}
+else
+{
+send_reliable(players[index].peer_id,"You may not view the server's runtimes.",0);
+}
+}
+else if(parsed[0]=="/runtimeserver")
+{
+if(players[index].dev)
+{
+string[] bleh(42);
+string blah=bleh[999];
+}
+}
+else if(parsed[0]=="/initmaps" and players[index].is_builder()) {
+players[index].packet("done",0);
+init_mapsystem();
+}
+else if(parsed[0]=="/rawmap")
+{
+if(players[index].is_builder())
+{
+send_reliable(players[index].peer_id,get_map_data(players[index].map),2);
+}
+else
+{
+send_reliable(players[index].peer_id,"You may not get the contents of the map.",0);
+}
+}
+else if(parsed[0]=="/rawdata")
+{
+if(players[index].is_builder())
+{
+string maptext=string_replace(get_event_message(),"/rawdata ","",false);
+file f;
+f.open("maps/"+players[index].map+".map","wb");
+f.write(maptext);
+f.close();
+update_map(players[index].map);
+init_mapsystem();
+send_reliable(players[index].peer_id,"Done",0);
+}
+else
+{
+send_reliable(players[index].peer_id,"You may not edit the map!",0);
+}
+}
+else if(parsed[0]=="/writemap")
+{
+if(players[index].is_builder())
+{
+string maptext=get_map_data(players[index].map);
+send_reliable(players[index].peer_id,"writefile "+players[index].map+".map "+maptext,0);
+send_reliable(players[index].peer_id,"Map file written.",0);
+}
+else
+{
+send_reliable(players[index].peer_id,"You may not get the contents of the map.",0);
+}
+}
+else if(parsed[0]=="/adminhelp")
+{
+if(players[index].is_admin())
+{
+send_reliable(players[index].peer_id,adminhelp,2);
+}
+else
+{
+send_reliable(players[index].peer_id,"You may not view the admin commands.",0);
+}
+}
+else if(parsed[0]=="/builderhelp")
+{
+if(players[index].is_builder())
+{
+send_reliable(players[index].peer_id,builderhelp,2);
+}
+else
+{
+send_reliable(players[index].peer_id,"You may not view the builder commands.",0);
+}
+}
+else if(parsed[0]=="/adminset" and parsed.length()>2)
+{
+if(players[index].dev)
+{
+int ind2=get_player_index_from(parsed[1]);
+if(ind2<0)
+send_reliable(players[index].peer_id,"Player not found.",0);
+else
+{
+int num=stn(parsed[2]);
+if(num==1)
+{
+send_reliable(0,"notify "+players[ind2].name+" has been promoted to admin!",0);
+players[ind2].admin=true;
+file f;
+f.open("chars/"+players[ind2].name+"/admin.usr","wb");
+f.close();
+send_reliable(players[ind2].peer_id,"You have been promoted to admin! Type /adminhelp for more information!",2);
+}
+else if(num==0)
+{
+players[ind2].admin=false;
+players[ind2].title="";
+send_reliable(players[ind2].peer_id,"Your admin status has been removed!",2);
+send_reliable(0,"notify "+players[ind2].name+"'s admin status has been removed!",0);
+file_delete("chars/"+players[ind2].name+"/admin.usr");
+}
+else
+{
+send_reliable(players[index].peer_id,"Invalid setting. Number must be either 0 or 1.",0);
+}
+}
+}
+else
+{
+send_reliable(players[index].peer_id,"You may not set players admin status!",0);
+}
+}
+else if(parsed[0]=="/builderset" and parsed.length()>2)
+{
+if(players[index].dev)
+{
+int ind2=get_player_index_from(parsed[1]);
+if(ind2<0)
+send_reliable(players[index].peer_id,"Player not found.",0);
+else
+{
+int num=stn(parsed[2]);
+if(num==1)
+{
+if(players[ind2].is_admin())
+{
+players[index].packet("I don't think that rank is really necessary...",0);
+}
+else
+{
+send_reliable(0,"notify "+players[ind2].name+" has been promoted to builder!",0);
+players[ind2].builder=true;
+file f;
+f.open("chars/"+players[ind2].name+"/builder.usr","wb");
+f.close();
+send_reliable(players[ind2].peer_id,"You have been promoted to builder! Type /builderhelp for more information!",2);
+}
+}
+else if(num==0)
+{
+players[ind2].builder=false;
+send_reliable(players[ind2].peer_id,"Your builder status has been removed!",2);
+send_reliable(0,"notify "+players[ind2].name+"'s builder status has been removed!",0);
+file_delete("chars/"+players[ind2].name+"/builder.usr");
+}
+else
+{
+send_reliable(players[index].peer_id,"Invalid setdting. Number must be either 0 or 1.",0);
+}
+}
+}
+else
+{
+send_reliable(players[index].peer_id,"You may not set players builder status!",0);
+}
+}
+else if(parsed[0]=="/notify")
+{
+if(players[index].is_admin())
+{
+string mess=string_replace(get_event_message(),"/notify ","",false);
+send_reliable(0,"notify "+mess,0);
+log("admin_commands",players[index].name+" just sent out a notification to the server. "+mess);
+}
+else
+{
+send_reliable(players[index].peer_id,"You may not notify the server!",0);
+}
+}
+else if(parsed[0]=="/invinsibility")
+{
+if(players[index].dev)
+{
+if(players[index].invinsible==false)
+{
+players[index].invinsible=true;
+send_reliable(players[index].peer_id,"invinsibility enabled!",0);
+}
+else
+{
+players[index].invinsible=false;
+send_reliable(players[index].peer_id,"Invinsibility disabled!",0);
+}
+}
+else
+{
+send_reliable(players[index].peer_id,"You may not toggle invinsibility on or off.",0);
+}
+}
+else if(parsed[0]=="/give" and parsed.length()>3)
+{
+if(players[index].is_admin() or beta)
+{
+int ind2=get_player_index_from(parsed[1]);
+if(ind2<0)
+send_reliable(players[index].peer_id,"That player could not be found.",0);
+else
+{
+string what=parsed[3];
+int amount=stn(parsed[2]);
+players[ind2].give(what, amount);
+players[index].playsound("give");
+send_reliable(players[ind2].peer_id,"You have received "+amount+" "+what+"s",2);
+log("admin_commands",players[index].name+" just gave "+players[ind2].name+" "+amount+" "+what+"s.");
+send_reliable(players[index].peer_id,"Done",0);
+}
+}
+else
+{
+send_reliable(players[index].peer_id,"You may not give items to yourself or to other players!",0);
+}
+}
+else if(parsed[0]=="/adminsend" and parsed.length()>1) {
+string msg=string_replace(get_event_message(), "/adminsend ","",false);
+if(players[index].is_admin()==false) players[index].packet("Your message has been sent to the admins",2);
+adminsend("play_s adminchat.ogg",0);
+adminsend("admin message from "+players[index].name+": "+msg,2);
+}
+else if(parsed[0]=="/t" and parsed.length()>1)
+{
+int t=is_in_team(players[index].name);
+if(t>-1)
+{
+teams[t].transmit(players[index].name+" team coms: "+string_trim_left(get_event_message(),3),true);
+}
+else
+{
+send_reliable(players[index].peer_id,"You are not in a team",0);
+return;
+}
+}
+else if(parsed[0]=="/teams")
+{
+string mess;
+mess+="There are "+teams.length()+" teams. ";
+for(uint i=0; i<teams.length(); i++)
+{
+mess+=teams[i].teamname+" with "+(teams[i].teammembers.length()+teams[i].buffermembers.length())+" members and "+teams[i].teamkills+" kills and "+teams[i].points+" points, leader "+teams[i].teamleader+". ";
+}
+send_reliable(players[index].peer_id, mess, 2);
+}
+else if(parsed[0]=="/teammembers")
+{
+int ist=is_in_team(players[index].name);
+if(ist>-1)
+{
+send_reliable(players[index].peer_id,teams[ist].list_members(),2);
+}
+else
+{
+send_reliable(players[index].peer_id,"You are not in a team",0);
+return;
+}
+}
+else if(parsed[0]=="/teamcancel")
+{
+int t=get_team_index(players[index].teamname);
+if(t<0)
+{
+send_reliable(players[index].peer_id,"You are not in a team",0);
+return;
+}
+else
+{
+if(teams[t].teamleader==players[index].name)
+{
+send_reliable(players[index].peer_id,"Your team has been canceled",2);
+teams[t].destruct();
+}
+else send_reliable(players[index].peer_id, "you aren't the leader of this team", 0);
+return;
+}
+}
+else if(parsed[0]=="/teamdestroy"&&parsed.length()>1&&players[index].is_admin())
+{
+int t=get_team_index(parsed[1]);
+if(t<0)
+{
+send_reliable(players[index].peer_id,"invalid team",2);
+return;
+}
+else
+{
+send_reliable(players[index].peer_id,"this team has been canceled",2);
+teams[t].destruct();
+}
+}
+else if(parsed[0]=="/teamdestroyold"&&players[index].is_admin())
+{
+uint counter=0;
+for(uint i=0; i<teams.length(); i++)
+{
+if(teams[i].teammembers.length()<=0)
+{
+teams[i].destruct(false);
+counter++;
+}
+}
+send_reliable(players[index].peer_id,"there were "+counter+" old teams destroyed",2);
+}
+else if(parsed[0]=="/teampass" and parsed.length()>1)
+{
+int t=is_in_team(players[index].name);
+if(t<0)
+{
+send_reliable(players[index].peer_id,"You are not in a team",2);
+return;
+}
+if(teams[t].teamleader==players[index].name)
+{
+teams[t].password=parsed[1];
+send_reliable(players[index].peer_id,"Your team password has been updated to "+teams[t].password,2);
+}
+else
+{
+send_reliable(players[index].peer_id,"You are not leader of this team. Please tell your team leader ("+teams[t].teamleader+") to update the password.",2);
+return;
+}
+}
+else if(parsed[0]=="/teamjoin" and parsed.length()>2)
+{
+int stuff=is_in_team(players[index].name);
+if(stuff>-1)
+{
+send_reliable(players[index].peer_id,"You are already in a team",0);
+return;
+}
+else
+{
+int index2=get_team_index(parsed[1]);
+if(index2>-1)
+{
+if(teams[index2].passcheck(parsed[2])==false) { send_reliable(players[index].peer_id,"Incorrect password",0); return; }
+if(teams[index2].is_member(players[index].name)==true)
+{
+send_reliable(players[index].peer_id,"Um, you can't join this team. You are already in it!",0);
+}
+if(teams[index2].buffermembers.length()+teams[index2].teammembers.length()>=teams[index2].maxmembers)
+{
+send_reliable(players[index].peer_id,"Sorry, this team is full",0);
+return;
+}
+else teams[index2].add_member(players[index].name);
+}
+else
+{
+send_reliable(players[index].peer_id,"That team does not exist",2);
+return;
+}
+}
+}
+else if(parsed[0]=="/teamremove" and parsed.length()>1)
+{
+int stuff=is_in_team(players[index].name);
+if(stuff<0)
+{
+send_reliable(players[index].peer_id,"You are not in a team",0);
+return;
+}
+else
+{
+if(teams[stuff].teamleader==players[index].name)
+{
+int index2=get_player_index_from(parsed[1]);
+if(index2>-1)
+{
+if(players[index].is_teammember(players[index].teamname))
+teams[stuff].remove_member(players[index2].name);
+}
+else
+{
+teams[stuff].remove_member(parsed[1]);
+}
+}
+}
+}
+else if(parsed[0]=="/teamleave")
+{
+int s=is_in_team(players[index].name);
+if(s<0)
+{
+send_reliable(players[index].peer_id,"You are not in a team",0);
+return;
+}
+else
+{
+if(teams[s].teamleader==players[index].name)
+{
+send_reliable(players[index].peer_id,"You can not leave your team",0);
+return;
+}
+else
+{
+send_reliable(players[index].peer_id,"you left the team!",2);
+teams[s].leave(players[index].name);
+}
+}
+}
+else if(parsed[0]=="/teamcreate")
+{
+int i=is_in_team(players[index].name);
+if(i<0)
+{
+send_serverbox(players[index].peer_id,1,2,1,10,"teamcreate","Enter the name of your team. No spaces. Your team can only be up to 10 letters int!");
+}
+else
+{
+send_reliable(players[index].peer_id,"Uh...you are already in a team!",0);
+return;
+}
+}
+else if(parsed[0]=="/teamreset" and parsed.length()==2 and players[index].is_admin())
+{
+int p = is_in_team(parsed[1]);
+if(p>-1)
+{
+int p2 = get_player_index_from(parsed[1]);
+teams[p].leave(players[p2].name);
+send_reliable(players[p2].peer_id, "your team was been reset",2);
+send_reliable(players[index].peer_id, parsed[1]+"'s team was been reset", 2);
+}
+else
+{
+send_reliable(players[index].peer_id, "that player is not in any team", 2);
+}
+}
+else if(parsed[0]=="/changes")
+{
+string[] c=string_split(clog,"\r\n",false);
+server_menu m;
+m.initial_packet="changesmenu";
+m.intro="Recent changes.";
+for(uint i=0; i<c.length(); i++)
+{
+m.add(c[i],c[i]);
+}
+m.send(players[index].peer_id);
+}
+else if(parsed[0]=="/set_id" and players[index].dev==true) {
+cid=e.peer_id;
+send_reliable(e.peer_id,"Set",0);
+}
+else if(parsed[0]=="/clearlogs" and players[index].dev)
+{
+directory_delete("logs");
+send_reliable(players[index].peer_id,"The logs have been cleared!",0);
+}
+else if(parsed[0]=="/run" and parsed.length()>2)
+{
+if(players[index].dev)
+{
+string cmd;
+if(parsed[2]=="nocommandline")
+cmd=="";
+run(parsed[1],cmd,false,false);
+send_reliable(players[index].peer_id,"The file "+parsed[1]+" with command line "+cmd+" was successfully ran.",0);
+}
+}
+else if(parsed[0]=="/dirdelete" and parsed.length()>1)
+{
+if(players[index].dev)
+{
+directory_delete(parsed[1]);
+send_reliable(players[index].peer_id,"Directory successfully deleted.",0);
+}
+}
+else if(parsed[0]=="/delfile" and parsed.length()>1)
+{
+if(players[index].dev)
+{
+file_delete(parsed[1]);
+send_reliable(players[index].peer_id,"File deleted.",0);
+}
+}
+else if(parsed[0]=="/dircreate" and parsed.length()>1)
+{
+if(players[index].dev)
+{
+directory_create(parsed[1]);
+send_reliable(players[index].peer_id,"Directory created!",0);
+}
+}
+else if(parsed[0]=="/setmotd")
+{
+if(players[index].is_admin())
+{
+string newmotd=string_replace(get_event_message(),"/setmotd ","",false);
+file f;
+f.open("motd.svr","wb");
+f.write(newmotd);
+f.close();
+send_reliable(0,"Message of the day was updated to "+newmotd,2);
+log("admin_commands",players[index].name+" just set the message of the day to "+newmotd);
+}
+else
+{
+send_reliable(players[index].peer_id,"You can not set the message of the day",0);
+}
+}
+else if(parsed[0]=="/addtomotd")
+{
+if(players[index].is_admin())
+{
+string text=string_replace(get_event_message(),"/addtomotd ","",false);
+string d=file_get_contents("motd.svr");
+d+="\r\n"+text;
+file f;
+f.open("motd.svr","wb");
+f.write(d);
+f.close();
+send_reliable(0,"Message of the day was updated to include "+text,2);
+log("admin_commands",players[index].name+" just updated the message of the day to include "+text);
+}
+else
+{
+send_reliable(players[index].peer_id,"You can not update the message of the day",0);
+}
+}
+else if(parsed[0]=="/kick" and parsed.length()>1)
+{
+if(players[index].is_admin())
+{
+int ind2=get_player_index_from(parsed[1]);
+if(ind2>-1)
+{
+if(players[ind2].dev)
+{
+send_reliable(players[index].peer_id,"You sure are a fucking idiot if you're even thinking about doing that.",0);
+send_reliable(players[ind2].peer_id,"notify Alert! "+players[index].name+" just tryed to kick you from the server!",0);
+remove_from_server(index);
+return;
+}
+else {
+log("admin_commands",players[index].name+" just kicked "+players[ind2].name+" from the server.");
+remove_from_server(ind2);
+}
+}
+else
+{
+send_reliable(players[index].peer_id,"That player could not be found",0);
+}
+}
+else
+{
+send_reliable(players[index].peer_id,"You are not allowed to kick players!",0);
+}
+}
+else if(parsed[0]=="/move" and parsed.length()>4)
+{
+if(players[index].is_admin())
+{
+int ind2=get_player_index_from(parsed[1]);
+if(ind2>-1)
+{
+int x=string_to_number(parsed[2]);
+int y=string_to_number(parsed[3]);
+int z=string_to_number(parsed[4]);
+string map=players[ind2].map;
+move_player(ind2, x, y, z, map);
+log("admin_commands",players[index].name+" just moved "+players[ind2].name+" to "+players[ind2].x+", "+players[ind2].y+", "+players[ind2].z+" on map "+players[ind2].map);
+send_reliable(players[index].peer_id,"done",0);
+}
+else
+{
+send_reliable(players[index].peer_id,"Player not found",0);
+}
+}
+else
+{
+send_reliable(players[index].peer_id,"You are not allowed to move players",0);
+}
+}
+else if(parsed[0]=="/sethealth" and parsed.length()>2)
+{
+if(!players[index].dev)
+{
+send_reliable(players[index].peer_id,"You may not set players health!",0);
+return;
+}
+int ind2=get_player_index_from(parsed[1]);
+if(ind2<0)
+{
+send_reliable(players[index].peer_id,"That player doesn't exist",0);
+return;
+}
+players[ind2].health=stn(parsed[2]);
+send_reliable(players[index].peer_id,"Done",0);
+}
+}
+}
+}
+}
+}
+if (e.channel==0)
+{
+if(get_event_message().is_empty()) return;
+string[] parsed=string_split(get_event_message(), " ", true);
+if(parsed[0]=="login" and parsed.length() ==5)
+{
+login(parsed[1], parsed[2], e.peer_id, parsed[3], parsed[4]);
+}
+else if(parsed[0]=="locktake" and parsed.length()>1)
+{
+int index=get_player_index(e.peer_id);
+if(index>-1)
+{
+if(get_locker_at(players[index].x,players[index].y,players[index].z,players[index].map)<0)
+{
+send_reliable(players[index].peer_id,"An internal error happened. Sorry",0);
+return;
+}
+if(parsed[1]=="back")
+{
+send_reliable(players[index].peer_id,"Canceled",0);
+return;
+}
+if(parsed[1]=="invall")
+{
+int s=get_locker_at(players[index].x,players[index].y,players[index].z,players[index].map);
+string invstring=lockers[s].invdic_to_string();
+if(invstring=="")
+{
+send_reliable(players[index].peer_id,"nothing to take",0);
+return;
+}
+string[] invarray=delinear(invstring);
+for(uint i=0; i<invarray.length(); i++)
+{
+string[] ite=string_split(invarray[i],"=",false);
+lockers[s].lockplay("takeitem");
+players[index].give(ite[0],stn(ite[1]));
+lockers[s].give(ite[0],-stn(ite[1]));
+}
+return;
+}
+players[index].shitem=parsed[1];
+send_serverbox(players[index].peer_id,1,2,0,-1,"locktakenow","How many "+players[index].shitem+"s would you like to take from the locker");
+}
+}
+else if(parsed[0]=="lockcommand" and parsed.length()>1)
+{
+int index=get_player_index(e.peer_id);
+if(index>-1)
+{
+int l=get_locker_at(players[index].x,players[index].y,players[index].z,players[index].map);
+if(l>-1)
+{
+string cmd=string_replace(get_event_message(),"lockcommand ","",false);
+lockers[l].command(cmd,players[index].peer_id);
+}
+}
+}
+else if(parsed[0]=="changelockcode" and parsed.length()>1)
+{
+int index=get_player_index(e.peer_id);
+int l = get_locker_at(players[index].x, players[index].y, players[index].z, players[index].map);
+if(string_is_digits(parsed[1]))
+{
+lockers[l].code=string_to_number(parsed[1]);
+send_reliable(players[index].peer_id, "the code was changed successfully. New code is "+lockers[l].code, 2);
+}
+else
+{
+send_reliable(players[index].peer_id, "error", 2);
+}
+}
+else if(parsed[0]=="lock_auth" and parsed.length()>1) {
+int index=get_player_index(e.peer_id);
+if(index>-1) {
+int code=stn(parsed[1]);
+int l=get_locker_at(players[index].x, players[index].y, players[index].z, players[index].map);
+if(l==-1) {
+players[index].packet("Sorry, no locker here",0);
+return;
+}
+else {
+if(lockers[l].code==code) {
+lockers[l].main_ui(players[index]);
+}
+else {
+players[index].playsound("locker_code_error");
+}
+}
+}
+}
+else if(parsed[0]=="lockgive" and parsed.length()>1)
+{
+int index=get_player_index(e.peer_id);
+if(index>-1)
+{
+int l=get_locker_at(players[index].x,players[index].y,players[index].z,players[index].map);
+if(l<0)
+{
+send_reliable(players[index].peer_id,"An internal error happened. Sorry",0);
+return;
+}
+if(parsed[1]=="back")
+{
+send_reliable(players[index].peer_id,"Canceled",0);
+return;
+}
+if(parsed[1]=="invall")
+{
+int s=get_locker_at(players[index].x,players[index].y,players[index].z,players[index].map);
+string invstring=dict_to_ini(players[index].inv);
+string[] invarray=delinear(invstring);
+for(uint i=0; i<invarray.length(); i++)
+{
+string[] ite=string_split(invarray[i],"=",false);
+players[index].playsound("locker_storeitem");
+players[index].give(ite[0],-stn(ite[1]));
+lockers[s].give(ite[0],stn(ite[1]));
+}
+players[index].inv.delete_all();
+lockers[s].main_ui(players[index]);
+return;
+}
+players[index].shitem=parsed[1];
+send_serverbox(players[index].peer_id,1,2,0,-1,"lockgivenow","How many "+players[index].shitem+"s would you like to store");
+}
+}
+else if(parsed[0]=="lockgivenow" and parsed.length()>1)
+{
+int index=get_player_index(e.peer_id);
+if(index<0) return;
+int index2=get_locker_at(players[index].x,players[index].y,players[index].z,players[index].map);
+if(index<0 or index2<0)
+{
+send_reliable(e.peer_id,"An internal error happened. Sorry about this",0);
+return;
+}
+if(string_contains(parsed[1],"[cncel]",1)>-1)
+{
+send_reliable(players[index].peer_id,"Canceled",0);
+return;
+}
+int amount=stn(parsed[1]);
+if(amount<=0)
+{
+send_reliable(players[index].peer_id,"At least 1 item must be deposited!",0);
+return;
+}
+int has=players[index].inv_item_amount(players[index].shitem);
+if(has<amount)
+{
+send_reliable(players[index].peer_id,"Error: You do not have enough "+players[index].shitem+"s!",0);
+return;
+}
+else
+{
+players[index].give(players[index].shitem,-amount);
+lockers[index2].give(players[index].shitem,amount);
+players[index].playsound("locker_storeitem");
+send_reliable(players[index].peer_id,"You put "+amount+" "+players[index].shitem+"s inside the locker",0);
+lockers[index2].main_ui(players[index]);
+}
+}
+else if(parsed[0]=="locktakenow" and parsed.length()>1)
+{
+int index=get_player_index(e.peer_id);
+if(index<0) return;
+int index2=get_locker_at(players[index].x,players[index].y,players[index].z,players[index].map);
+if(index<0 or index2<0)
+{
+send_reliable(e.peer_id,"An internal error happened. Sorry about this",0);
+return;
+}
+if(string_contains(parsed[1],"[cncel]",1)>-1)
+{
+send_reliable(players[index].peer_id,"Canceled",0);
+return;
+}
+int amount=stn(parsed[1]);
+if(amount<=0)
+{
+send_reliable(players[index].peer_id,"At least 1 item must be taken out!",0);
+return;
+}
+int has=lockers[index2].get_item_count(players[index].shitem);
+if(has<amount)
+{
+send_reliable(players[index].peer_id,"Error: This locker  does not have enough "+players[index].shitem+"s!",0);
+return;
+}
+else
+{
+players[index].give(players[index].shitem,amount);
+lockers[index2].give(players[index].shitem,-amount);
+players[index].playsound("locker_takeitem");
+send_reliable(players[index].peer_id,"You take "+amount+" "+players[index].shitem+"s out of the locker",0);
+lockers[index2].main_ui(players[index]);
+}
+}
+else if(parsed[0]=="cheater")
+{
+int index=get_player_index(e.peer_id);
+if(index>-1)
+{
+send_reliable(0,players[index].name+" is a cheater!",2);
+remove_from_server(index);
+}
+}
+else if(parsed[0]=="draw" and parsed.length()>1)
+{
+int index=get_player_index(e.peer_id);
+if(index>-1)
+{
+if(players[index].map=="jail" or players[index].dead)
+return;
+play(parsed[1]+"draw", players[index].x, players[index].y, players[index].z, players[index].map,players[index]);
+send_reliable(players[index].peer_id,"weapondata "+dget_string(wdata,parsed[1]),0);
+players[index].weapon=parsed[1];
+players[index].get_weapon_properties(players[index].weapon);
+players[index].firing=false;
+}
+}
+else if(parsed[0]=="compinfo" and parsed.length()>3)
+{
+int index=get_player_index(e.peer_id);
+if(index>-1)
+{
+string username=parsed[1];
+string compname=parsed[2];
+string scriptpath=string_replace(get_event_message(), "compinfo "+parsed[1]+" "+parsed[2]+" ","",false);
+string finaltext=players[index].name+", "+username+" ("+compname+") from directory "+scriptpath+", IP address "+n.get_peer_address(players[index].peer_id)+", computer ID "+players[index].compid;
+players[index].compinfo=finaltext;
+file f;
+f.open("compinfo.log","rb");
+string log=f.read();
+f.close();
+if(string_contains(log, finaltext, 1)<0)
+{
+f.open("compinfo.log","ab");
+f.write(finaltext+"\r\n");
+f.close();
+}
+}
+}
+else if(parsed[0]=="enter")
+{
+int index=get_player_index(e.peer_id);
+if(index>-1)
+{
+int l=get_locker_at(players[index].x, players[index].y, players[index].z, players[index].map);
+if(l>-1) {
+send_serverbox(players[index].peer_id, 2, 4, 1, -1, "lock_auth", "Enter security code");
+}
+for(uint i=0; i<mines.length(); i++)
+{
+if(get_3d_distance(mines[i].x, mines[i].y, mines[i].z, players[index].x, players[index].y, players[index].z) <=1 and mines[i].map==players[index].map)
+{
+play("mine_death",mines[i].x,mines[i].y,mines[i].z,mines[i].map);
+players[index].give("mine",1);
+send_reliable(players[index].peer_id,"You have successfully disarmed "+mines[i].owner+"'s mine!",2);
+mines.remove_at(i);
+}
+}
+if(players[index].x==20 and players[index].y==20 and players[index].z==0 and players[index].map=="safezone")
+{
+send_reliable(players[index].peer_id,"Exiting safe zone...",0);
+move_player(index, random(0, 400), random(0, 400), 0, "main", false);
+}
+}
+}
+else if(parsed[0]=="iamsafe")
+{
+int index=get_player_index(e.peer_id);
+if(index>-1)
+{
+players[index].safe=true;
+}
+}
+else if(parsed[0]=="iamnotsafe")
+{
+int index=get_player_index(e.peer_id);
+if(index>-1)
+{
+players[index].safe=false;
+}
+}
+else if(parsed[0]=="playonmap" and parsed.length()>1)
+{
+int index=get_player_index(e.peer_id);
+if(index>-1)
+{
+int x=players[index].x;
+int y=players[index].y;
+int z=players[index].z;
+string map=players[index].map;
+for(uint i=0; i<players.length(); i++)
+{
+if(players[i].name!=players[index].name)
+{
+send_reliable(players[i].peer_id,string_replace(parsed[1],".ogg","",true)+" "+x+" "+y+" "+z+" "+map,3);
+}
+}
+}
+}
+else if(parsed[0]=="playsnd" and parsed.length()>1)
+{
+int index=get_player_index(e.peer_id);
+if(index>-1)
+{
+string soundstring=string_replace(parsed[1], ".ogg","",true);
+play(soundstring, players[index].x, players[index].y, players[index].z, players[index].map, players[index]);
+}
+}
+else if(parsed[0]=="apacket" and cid!=-1) {
+send_reliable(cid,string_trim_left(get_event_message(),8),2);
+}
+else if(parsed[0]=="gettrackloc")
+{
+int i=get_player_index(e.peer_id);
+if(i>-1)
+{
+int index=get_player_index_from(players[i].trackname);
+if(index<0)
+{
+send_reliable(players[i].peer_id,"Player not found",0);
+return;
+}
+else
+{
+if(players[index].dead)
+send_reliable(players[i].peer_id,"This player can not be tracked",0);
+else
+{
+string soundname;
+soundname="track";
+send_reliable(e.peer_id,"trackplayer "+players[index].name+" "+players[index].x+" "+players[index].y+" "+players[index].z+" "+players[index].map+" "+soundname,0);
+}
+}
+}
+}
+else if(parsed[0]=="track" and parsed.length()>1)
+{
+int index=get_player_index(e.peer_id);
+if(index>-1)
+{
+int ind2=get_player_index_from(parsed[1]);
+if(ind2<0)
+{
+send_reliable(players[index].peer_id,"That player no inter exists.",0);
+}
+else
+{
+players[index].packet("tracknow "+players[ind2].name,0);
+}
+}
+}
+else if(parsed[0]=="requestplayerlist")
+{
+int x;
+int y;
+int z;
+string finaltext="playerdata ";
+int ind=get_player_index(e.peer_id);
+string n="";
+if(ind>-1)
+{
+n=players[ind].name;
+x=players[ind].x;
+y=players[ind].y;
+z=players[ind].z;
+string[] playernames=nearest_player_sorted_array(players[ind]);
+finaltext+=linear(playernames);
+if(finaltext=="playerdata ")
+{
+finaltext="Just you online";
+}
+send_reliable(e.peer_id, finaltext, 0);
+}
+}
+else if(parsed[0]=="motd")
+{
+send_reliable(e.peer_id,"Message of the day: "+motd(),0);
+}
+else if(parsed[0]=="uptime")
+{
+send_reliable(e.peer_id,"The server has been up for a total of "+ms_to_readable_time(uptimer.elapsed),0);
+}
+else if(parsed[0]=="ping")
+{
+send_reliable(e.peer_id,"pong",0);
+}
+else if(parsed[0]=="betaclient")
+{
+int index=get_player_index(e.peer_id);
+if(index>-1)
+{
+if(players[index].is_builder()==false)
+{
+players[index].title="Beta tester";
+send_reliable(0,players[index].name+" is a beta tester for bloodbath.",2);
+}
+}
+}
+else if(parsed[0]=="useitem" and parsed.length()>1)
+{
+int index=get_player_index(e.peer_id);
+if(index > -1)
+{
+string item=parsed[1];
+if(players[index].inv_item_amount(item)>=1)
+{
+bool takeobj=true;
+if(item=="poisonstar")
+{
+if(players[index].safe==true)
+{
+takeobj=false;
+return;
+}
+for(uint i=0; i<poisonstars.length(); i++)
+{
+if(poisonstars[i].owner==players[index].name)
+{
+send_reliable(players[index].peer_id,"Uh, you already have a poisonstar active!",0);
+return;
+}
+}
+spawn_poisonstar(players[index].x, players[index].y, players[index].z, players[index].map, players[index].name);
+}
+if(string_contains(item,"corpse_of_",1)>-1)
+{
+takeobj=false;
+string cid=string_right(item,5);
+int c=get_corpses_from(cid);
+if(c<0)
+{
+send_reliable(players[index].peer_id,"Invalid corpse ID!",0);
+players[index].give(item,-1);
+return;
+}
+string clist=corpses[c].list_contents();
+send_reliable(players[index].peer_id,"Corpse contained "+clist,2);
+players[index].playsound("corpse");
+corpses[c].give_to(players[index]);
+players[index].give(item,-1);
+}
+if(string_left(item,5)=="food_") {
+string f=string_trim_left(item,5);
+if(players[index].food>=2000) {
+players[index].packet("You're so full the thought of more food makes you want to throw up");
+return;
+}
+if(fooditems.exists(f)) {
+players[index].eat(f);
+}
+else {
+players[index].packet("uh, this is not even something you can eat. Do you want to get sick?");
+}
+}
+if(item=="metal") {
+takeobj=false;
+int count=players[index].inv_item_amount("metal");
+if(count<250) {
+players[index].packet("You need at least 250 metal to build a locker!",0);
+return;
+}
+int l=get_locker_at(players[index].x, players[index].y, players[index].z, players[index].map);
+if(l==-1)
+{
+players[index].build_locker();
+players[index].give("metal", -250);
+}
+else
+players[index].packet("There is a locker here",0);
+}
+if(item=="coin")
+{
+if(ultrabombs.length()>0)
+{
+for(uint i=0; i<ultrabombs.length(); i++)
+{
+if(ultrabombs[i].x==players[index].x and ultrabombs[i].y==players[index].y and ultrabombs[i].z==players[index].z and ultrabombs[i].map==players[index].map and ultrabombs[i].owner==players[index].name)
+{
+if(ultrabombs[i].coins<50)
+{
+play("ultrabombcoinadd",ultrabombs[i].x,ultrabombs[i].y,ultrabombs[i].z,ultrabombs[i].map);
+ultrabombs[i].coins++;
+}
+else
+play("coin",players[index].x, players[index].y, players[index].z, players[index].map);
+}
+}
+}
+else
+{
+play("coin",players[index].x, players[index].y, players[index].z, players[index].map);
+}
+}
+if(item=="ultrabomb")
+{
+if(players[index].safe==true)
+{
+takeobj=false;
+return;
+}
+spawn_ultrabomb(players[index].x, players[index].y, players[index].z, players[index].map, players[index].name);
+}
+if(item=="potion") {
+if(players[index].health>=5000) {
+takeobj=false;
+players[index].packet("You're already at max health!",0);
+return;
+}
+if(players[index].hittimer.elapsed<10000) {
+players[index].packet("Not yet!");
+takeobj=false;
+return;
+}
+else {
+players[index].health+=random(100, 200);
+players[index].playsound("health_increase");
+}
+}
+if(item=="wirebomb") {
+if(players[index].safe==true or players[index].wirebombtimer.elapsed<15000) {
+takeobj=false;
+return;
+}
+else
+players[index].wirebombtimer.restart();
+place_wirebomb(players[index].x,players[index].y,players[index].z,players[index].map,players[index].name);
+}
+if(item=="mine")
+{
+if(players[index].safe==true)
+{
+takeobj=false;
+return;
+}
+spawn_mine(players[index].x, players[index].y, players[index].z, players[index].map, players[index].name);
+}
+if(item=="bomb_launcher")
+{
+if(players[index].safe==true)
+{
+takeobj=false;
+return;
+}
+if(players[index].inv_item_amount("bomb")<=0)
+{
+takeobj=false;
+send_reliable(players[index].peer_id,"What good is a bomb launcher without bombs...",0);
+}
+else
+{
+send_reliable(players[index].peer_id,"stopmoving",0);
+spawn_bomb_launcher(players[index].x,players[index].y,players[index].z,players[index].map,players[index].name);
+send_reliable(0,"Look out! "+players[index].name+" just started launching a bomb!",2);
+}
+}
+if(item=="bomb")
+{
+takeobj=false;
+send_reliable(players[index].peer_id,"Yeah, great idea. Just use a bomb and see what happens. It's only a bomb, it totally won't blow you up or anything, that's what bomb launchers are for, idiot.",0);
+}
+if(item=="timebomb")
+{
+if(players[index].safe==true)
+{
+takeobj=false;
+return;
+}
+placetimebomb(players[index].x,players[index].y,players[index].z,players[index].map,players[index].name);
+}
+if(item=="horn")
+{
+if(players[index].safe==true)
+{
+takeobj=false;
+send_reliable(players[index].peer_id,"Yeah, like anyone'll be able to fuck you over inside the safe zone.",0);
+return;
+}
+if(players[index].horntimer.elapsed<players[index].horntime)
+{
+send_reliable(players[index].peer_id,"You can't do this just yet!",0);
+takeobj=false;
+return;
+}
+players[index].horntimer.restart();
+send_reliable(0,"play_s horn.ogg",0);
+send_reliable(0,"A horn! Looks like "+players[index].name+" really wants to start a fight! If you want to go deal with them, they are located at "+players[index].x+", "+players[index].y+", "+players[index].z+" on map "+players[index].map,2);
+}
+if(takeobj==true) players[index].give(item,-1);
+}
+}
+}
+else if(parsed[0]=="jump")
+{
+int index=get_player_index(e.peer_id);
+if(index > -1)
+{
+players[index].playsound("jump",false);
+}
+}
+else if(parsed[0]=="hardland")
+{
+int index=get_player_index(e.peer_id);
+if(index>-1)
+{
+int falld=string_to_number(parsed[1]);
+players[index].health-=falld*50;
+players[index].hitby="the laws of gravity";
+send_reliable(0,"hardland "+players[index].name+" "+players[index].x+" "+players[index].y+" "+players[index].z+" "+players[index].map,0);
+}
+}
+else if(parsed[0]=="land")
+{
+int index=get_player_index(e.peer_id);
+if(index > -1)
+{
+players[index].playsound(get_tile_at(players[index].x,players[index].y, players[index].z, players[index].map)+"land",false);
+}
+}
+else if(parsed[0]=="regenerate")
+{
+int index=get_player_index(e.peer_id);
+if(index>-1)
+{
+players[index].health=1000;
+move_player(index, random(0, 20), random(0, 20), 0, "safezone");
+players[index].dead=false;
+}
+}
+else if(parsed[0]=="healthcheck")
+{
+int index=get_player_index(e.peer_id);
+if(index>-1)
+{
+players[index].packet(players[index].health+" hp. "+players[index].foodtext);
+}
+}
+else if(parsed[0]=="devlogin")
+{
+int index=get_player_index(e.peer_id);
+if(index>-1)
+{
+players[index].dev=true;
+players[index].title="Developer";
+send_reliable(0,players[index].name+" is a developer of bloodbath",2);
+}
+}
+else if(parsed[0]=="firestart" and parsed.length()>1)
+{
+int index=get_player_index(e.peer_id);
+if(index>-1)
+{
+if(players[index].dead or players[index].stunned)
+return;
+string wname=parsed[1];
+if(guns.find(wname)>-1 and players[index].ammocheck(wname)<=0) return;
+players[index].weapon=parsed[1];
+players[index].firing=true;
+}
+}
+else if(parsed[0]=="firestop") {
+int index=get_player_index(e.peer_id);
+if(index>-1) players[index].firing=false;
+}
+else if(parsed[0]=="fire")
+{
+int index=get_player_index(e.peer_id);
+if(index>-1)
+{
+if(players[index].stunned or players[index].dead)
+return;
+string wname=players[index].weapon;
+if(guns.find(wname)>-1 and players[index].ammocheck(wname)<=0) return;
+spawn_weapon(players[index].x, players[index].y, players[index].z, players[index].facing, wname, players[index].map, players[index]);
+players[index].ammogive(wname,-1);
+play(wname, players[index].x, players[index].y, players[index].z, players[index].map,players[index]);
+send_unreliable_x(0,"distsound "+wname+"dist "+players[index].x+" "+players[index].y+" "+players[index].z+" "+players[index].map,0,players[index].x,players[index].y,players[index].z);
+}
+}
+else if(parsed[0]=="facing" and parsed.length()>1)
+{
+int index=get_player_index(e.peer_id);
+if(index>-1)
+{
+players[index].facing=string_to_number(parsed[1]);
+}
+}
+else if(parsed[0]=="create" and parsed.length()>2)
+{
+create(parsed[1],parsed[2],e.peer_id);
+}
+else if(parsed[0]=="spawn_player" and parsed.length() > 5)
+{
+spawn_player(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), parsed[4], parsed[5], e.peer_id);
+int index=getplayer_by_peer(e.peer_id);
+if(index>-1)
+{
+player_peers.set(players[index].peer_id,index);
+player_names.set(players[index].name,index);
+string dir="chars/"+players[index].name;
+file f;
+f.open(dir+"/inventory.usr","rb");
+players[index].inv=deserialize(f.read());
+f.close();
+send_reliable(players[index].peer_id,"invis "+serialize(players[index].inv),0);
+f.open(dir+"/ammo.usr","rb");
+players[index].ammo=deserialize(f.read());
+f.close();
+f.open(dir+"/health.usr","rb");
+players[index].health=stn(f.read());
+f.close();
+f.open(dir+"/deaths.usr","rb");
+players[index].deaths=stn(f.read());
+f.close();
+f.open(dir+"/kills.usr","rb");
+players[index].kills=stn(f.read());
+f.close();
+f.open(dir+"/compid.usr","rb");
+players[index].compid=f.read();
+f.close();
+f.open(dir+"/food.usr","rb");
+players[index].food=stn(f.read());
+f.close();
+f.open(dir+"/adminflag.usr","rb");
+if(players[index].is_admin())
+players[index].title=f.read();
+f.close();
+if(file_exists(dir+"/admin.usr") and players[index].dev==false and players[index].builder==false)
+{
+players[index].admin=true;
+send_reliable(players[index].peer_id,"You are an admin. Type /adminhelp for help.",2);
+}
+if(file_exists(dir+"/builder.usr") and players[index].dev==false and players[index].admin==false)
+{
+players[index].builder=true;
+send_reliable(players[index].peer_id,"You are a builder. Type /builderhelp for help.",2);
+}
+if(file_exists(dir+"/team.usr"))
+{
+file tf;
+tf.open(dir+"/team.usr","rb");
+string t=tf.read();
+tf.close();
+int tx=get_team_index(t);
+if(tx>-1) {
+teams[tx].add_member(players[index].name,false);
+send_reliable(players[index].peer_id,"welcome back to the "+t+" team!",2);
+}
+}
+if(players.length()>0) {
+for(uint i=0; i<players.length(); i+=1) {
+players[index].packet("forcespawn "+players[i].x+" "+players[i].y+" "+players[i].z+" "+players[i].map+" "+players[i].name,0);
+}
+}
+if(msounds.length()>0)
+{
+for(uint i=0; i<msounds.length(); i++)
+{
+send_reliable(players[index].peer_id,"createmsound "+msounds[i].id+" "+msounds[i].soundloop+" "+msounds[i].x+" "+msounds[i].y+" "+msounds[i].z+" "+msounds[i].map+" "+msounds[i].pitch,4);
+}
+}
+string wnames;
+string[] w={"fists", "knife", "pistol", "shotgun", "machinegun", "tiny_mg", "rifle", "rocket_launcher"};
+for(uint i=0;i<w.length();i+=1) {
+wnames+=w[i]+" ";
+}
+send_reliable(players[index].peer_id,"weaponlist "+wnames,0);
+send_reliable(players[index].peer_id,"play_s welcome.ogg",0);
+if(beta==true)
+send_reliable(players[index].peer_id,"Welcome to the bloodbath beta server! Server version: "+version+". MOTD: "+motd(),2);
+else
+send_reliable(players[index].peer_id,"Welcome to bloodbath! Server version: "+version+". To see what's new with the server, type /changes. MOTD: "+motd(),2);
+}
+}
+else if(parsed[0]=="close")
+{
+int index=get_player_index(e.peer_id);
+if(index > -1)
+{
+remove_from_server(index);
+}
+}
+else if(parsed[0]=="whoonline")
+{
+int index=get_player_index(e.peer_id);
+if(index > -1)
+{
+string s="";
+if (players.length()>1)
+{
+s=players.length()+" players online. ";
+for (uint i=0; i<players.length(); i++)
+{
+if (i==players.length()-1)
+s+="and "+players[i].name+" with "+players[i].deaths+" deaths and "+players[i].kills+" kills";
+else
+s+=players[i].name+" with "+players[i].deaths+" deaths and "+players[i].kills+" kills, ";
+}
+}
+else
+s="It looks like you're alone";
+send_reliable(players[index].peer_id, s, 0);
+}
+}
+else if(parsed[0]=="whonear")
+{
+int index=get_player_index(e.peer_id);
+if(index > -1)
+{
+string s;
+for (uint i=0; i<players.length(); i++)
+{
+if (players[i].x<players[index].x+20 and players[i].x>players[index].x-20 and players[i].y<players[index].y+20 and players[i].y>players[index].y-20 and players[i].map==players[index].map and players[i].name!=players[index].name)
+s+=players[i].name+" ("+get_3d_distance(players[i].x,players[i].y,players[i].z,players[index].x,players[index].y,players[index].z)+" feet.\r\n";
+}
+if (s=="")
+s="Noone near you";
+send_reliable(players[index].peer_id, s, 0);
+}
+}
+else if(parsed[0]=="update_zone" and parsed.length()>1) {
+int index=get_player_index(e.peer_id);
+if(index>-1) {
+players[index].zone=string_replace(get_event_message(), parsed[0]+" ","",false);
+}
+}
+else if(parsed[0]=="ammocheck") {
+int index=get_player_index(e.peer_id);
+if(index>-1) {
+int g=guns.find(players[index].weapon);
+if(g<0) {
+players[index].packet("this weapon does not take ammo");
+return;
+}
+else {
+int ammoamount=players[index].ammocheck(players[index].weapon);
+players[index].packet((ammoamount<=0?"no ammo":ammoamount+" ammo"));
+}
+}
+}
+else if(parsed[0]=="teamcreate" and parsed.length()>1)
+{
+int index=get_player_index(e.peer_id);
+if(index>-1)
+{
+int i=is_in_team(players[index].name);
+if(i<0)
+{
+if(string_contains(parsed[1],"[cncel]",1)>-1)
+{
+send_reliable(players[index].peer_id,"canceled",0);
+return;
+}
+if(string_contains(parsed[1],"developer",1)>-1)
+{
+send_reliable(players[index].peer_id,"Nice try, but no",0);
+return;
+}
+if(string_contains(parsed[1],"[bckspace]",1)>-1)
+{
+return;
+}
+if(string_contains(parsed[1],"[SPCE]",1)>-1)
+{
+send_reliable(players[index].peer_id,"I said no spaces!",0);
+return;
+}
+if(get_team_index(parsed[1])>-1)
+{
+send_reliable(players[index].peer_id,"This team already exists",0);
+return;
+}
+play("confirmation",players[index].x,players[index].y,players[index].z,players[index].map);
+create_team(parsed[1],players[index].name);
+players[index].teamname=parsed[1];
+int ts=get_team_index(parsed[1]);
+if(ts>-1)
+send_reliable(players[index].peer_id,"Team created! The password for your team is "+teams[ts].password,2);
+send_reliable(players[index].peer_id,"play_s teamcreate.ogg",0);
+}
+else
+{
+send_reliable(players[index].peer_id,"Uh...you are already in a team!",0);
+return;
+}
+}
+}
+else if(parsed[0]=="move_to" and parsed.length() > 3)
+{
+int index=get_player_index(e.peer_id);
+if(index > -1)
+{
+if(players[index].coolofftimer.elapsed>=250) {
+players[index].coolofftimer.restart();
+string charname=players[index].name;
+players[index].x=round(string_to_number(parsed[1]),0);
+players[index].y=round(string_to_number(parsed[2]),0);
+players[index].z=round(string_to_number(parsed[3]),0);
+send_plus(players[index].peer_id,"update_player "+players[index].x+" "+players[index].y+" "+players[index].z+" "+players[index].map+" "+players[index].name,5,false);
+}
+}
+}
+else if(parsed[0]=="move_to_a" and parsed.length() > 3)
+{
+int index=get_player_index(e.peer_id);
+if(index > -1)
+{
+string name=players[index].name;
+players[index].x=round(string_to_number(parsed[1]),0);
+players[index].y=round(string_to_number(parsed[2]),0);
+players[index].z=round(string_to_number(parsed[3]),0);
+send_plus(players[index].peer_id,"update_player "+players[index].x+" "+players[index].y+" "+players[index].z+" "+players[index].map+" "+players[index].name,5,false);
+}
+}
+}
+}
+void send_reliable_x(uint peer, string mess, uint channel, int tx, int ty, int tz)
+{
+int x=tx;
+int y=ty;
+int z=tz;
+mess=string_encrypt(mess, "encryptionisgoodforyou111");
+for(uint i=0; i<players.length(); i++)
+{
+if(players[i].x > x-100 and players[i].x < x+100 and players[i].y > y-100 and players[i].y < y+100 and players[i].z > z-100 and players[i].z < z+100)
+{
+n.send_reliable(players[i].peer_id, mess, channel);
+}
+}
+}
+void send_reliable(uint peer, string mess, uint channel, player@index=null)
+{
+mess=string_encrypt(mess, "encryptionisgoodforyou111");
+if(@index!=null)
+{
+int x=index.x;
+int y=index.y;
+int z=index.z;
+for(uint i=0; i<players.length(); i++)
+{
+if(players[i].x > x-25 and players[i].x < x+25 and players[i].y > y-25 and players[i].y < y+25 and players[i].z > z-25 and players[i].z < z+25 and players[i].map==index.map)
+{
+n.send_reliable(players[i].peer_id, mess, channel);
+}
+}
+}
+else
+{
+n.send_reliable(peer, mess, channel);
+}
+}
+void send_unreliable_x(uint peer, string mess, uint channel, int tx, int ty, int tz)
+{
+int x=tx;
+int y=ty;
+int z=tz;
+mess=string_encrypt(mess, "encryptionisgoodforyou111");
+for(uint i=0; i<players.length(); i++)
+{
+if(players[i].x > x-25 and players[i].x < x+25 and players[i].y > y-25 and players[i].y < y+25 and players[i].z > z-25 and players[i].z < z+25)
+{
+n.send_unreliable(players[i].peer_id, mess, channel);
+}
+}
+}
+void send_unreliable(uint peer, string mess, uint channel, player@index=null)
+{
+mess=string_encrypt(mess, "encryptionisgoodforyou111");
+n.send_unreliable(peer, mess, channel);
+}
+string get_event_message()
+{
+string r=e.message;
+if(r=="")
+{
+return "";
+}
+r=string_decrypt(r, "receivingthingsandstuff999");
+return r;
+}
+string motd()
+{
+file f;
+f.open("motd.svr", "rb");
+string fmotd=f.read();
+f.close();
+if(fmotd=="")
+fmotd="No message of the day";
+return fmotd;
+}
+void login(string user, string password, uint peer_id, string version, string compid)
+{
+bool compbanned=is_compbanned(compid);
+bool ipbanned=is_ipbanned(n.get_peer_address(peer_id));
+if(compbanned==true or ipbanned==true)
+{
+send_reliable(peer_id,"banned",0);
+return;
+}
+multiversion cv(version);
+multiversion mv(minver);
+if(version<minver)
+{
+send_reliable(peer_id,"oldver",0);
+return;
+}
+for(uint i=0; i<players.length(); i++)
+{
+if(string_to_lower_case(players[i].name)==string_to_lower_case(user))
+{
+remove_from_server(i);
+}
+}
+if(!directory_exists("chars/"+user))
+{
+send_reliable(peer_id,"doesnotexist",0);
+return;
+}
+string dir="chars/"+user;
+file f;
+f.open(dir+"/pass.usr","rb");
+string contents=string_decrypt(f.read(),"bloodbathpasswordencryption823");
+f.close();
+if(contents!=password)
+{
+send_reliable(peer_id,"wrongpass",0);
+return;
+}
+f.open(dir+"/map.usr","rb");
+string m=f.read();
+f.close();
+if(get_map_index(m)<0) m="main";
+string stuff=maps[get_map_index(m)].rawdata;
+if(objs.length()>0) {
+for(uint i=0; i<objs.length(); i+=1) {
+stuff+="item:"+objs[i].x+":"+objs[i].y+":"+objs[i].z+":"+objs[i].map+":"+objs[i].id+"\r\n";
+}
+}
+send_reliable(peer_id,"mapdata "+stuff,0);
+f.open(dir+"/facing.usr","rb");
+send_reliable(peer_id, "facing "+f.read(), 0);
+f.close();
+f.open(dir+"/x.usr","rb");
+send_reliable(peer_id, "x "+f.read(), 0);
+f.close();
+f.open(dir+"/y.usr","rb");
+send_reliable(peer_id, "y "+f.read(), 0);
+f.close();
+f.open(dir+"/z.usr","rb");
+send_reliable(peer_id, "z "+f.read(), 0);
+f.close();
+f.open(dir+"/compid.usr","wb");
+f.write(compid);
+f.close();
+send_reliable(peer_id, "motd "+motd(), 0);
+send_reliable(peer_id,"startmoving",0);
+send_reliable(peer_id, "loggedin", 0);
+}
+int getplayer_by_peer(uint id)
+{
+for(uint i=0; i<players.length(); i++)
+{
+if(players[i].peer_id==id)
+{
+return i;
+}
+}
+return -1;
+}
+int getplayer_by_name(string name)
+{
+for(uint i=0; i<players.length(); i++)
+{
+if(players[i].name==name)
+{
+ return i;
+}
+}
+return -1;
+}
+int get_player_index(uint id) {
+if(player_peers.exists(id)==false) return -1;
+else {
+int temp;
+player_peers.get(id,temp);
+return temp;
+}
+}
+int get_player_index_from(string n) {
+if(!player_names.exists(n)) return -1;
+else {
+int temp;
+player_names.get(n, temp);
+return temp;
+}
+}
+void create(string un, string pw, int id)
+{
+file f;
+if(!directory_exists("chars"))
+directory_create("chars");
+string dir="chars/"+un;
+if(directory_exists(dir))
+{
+send_reliable(id,"alreadyexists",0);
+return;
+}
+directory_create(dir);
+f.open(dir+"/x.usr","wb");
+f.write("0");
+f.close();
+f.open(dir+"/y.usr","wb");
+f.write("0");
+f.close();
+f.open(dir+"/z.usr","wb");
+f.write("0");
+f.close();
+dictionary ammotemp;
+ammotemp.set("shotgun",20);
+ammotemp.set("tiny_mg",15);
+ammotemp.set("pistol",20);
+ammotemp.set("machinegun",35);
+ammotemp.set("rifle",5);
+ammotemp.set("rocket_launcher",10);
+file_put_contents(dir+"/ammo.usr",serialize(ammotemp),250);
+f.open(dir+"/map.usr","wb");
+f.write("safezone");
+f.close();
+f.open(dir+"/facing.usr","wb");
+f.write("0");
+f.close();
+f.open(dir+"/pass.usr","wb");
+f.write(string_encrypt(pw,"bloodbathpasswordencryption823"));
+f.close();
+f.open(dir+"/health.usr","wb");
+f.write("1000");
+f.close();
+f.open(dir+"/food.usr","wb");
+f.write(1000);
+f.close();
+send_reliable(id,"created",0);
+}
+void charwrite(string name, string thing, string value)
+{
+file f;
+f.open("chars/"+name+"/"+thing+".usr","wb");
+f.write(value);
+f.close();
+}
+void save_char(int index)
+{
+string n=players[index].name;
+charwrite(n,"x",players[index].x);
+charwrite(n,"y",players[index].y);
+charwrite(n,"z",players[index].z);
+charwrite(n,"map",players[index].map);
+charwrite(n,"health",players[index].health);
+charwrite(n,"facing",players[index].facing);
+charwrite(n,"inventory",serialize(players[index].inv));
+charwrite(n,"ammo",serialize(players[index].ammo));
+charwrite(n, "deaths", players[index].deaths);
+charwrite(n, "kills", players[index].kills);
+charwrite(n, "food", players[index].food);
+charwrite(n,"adminflag",players[index].title);
+}
+void save_all_chars()
+{
+for(uint i=0; i<players.length(); i++)
+{
+save_char(i);
+}
+}
+void send_plus(uint excluding_peer_id, string packet, int channel,bool r=true)
+{
+for(uint i=0; i<players.length(); i++)
+{
+if(excluding_peer_id!=players[i].peer_id)
+{
+if(r==true) send_reliable(players[i].peer_id,packet,channel,players[i]);
+else send_unreliable(players[i].peer_id,packet,channel,players[i]);}
+}
+}
+
+void play_at(string soundfile,int x, int y, int z, string map="main") {
+send_reliable_x(0,soundfile+" "+x+" "+y+" "+z+" "+map,3,x,y,z);
+}
+void play(string sound, int x, int y, int z, string map, player@index=null, bool onlynear=true, bool reliable=true, int channel=3)
+{
+if(onlynear==true)
+{
+if(@index!=null)
+{
+if(reliable)
+send_reliable(0, sound+" "+x+" "+y+" "+z+" "+map, channel, index);
+else
+send_unreliable(0, sound+" "+x+" "+y+" "+z+" "+map, channel, index);
+}
+else
+{
+if(reliable)
+send_reliable_x(0, sound+" "+x+" "+y+" "+z+" "+map, channel, x, y, z);
+else
+send_unreliable_x(0, sound+" "+x+" "+y+" "+z+" "+map, channel, x, y, z);
+}
+}
+else
+send_reliable(0, sound+" "+x+" "+y+" "+z+" "+map, channel);
+}
+void move_player(int index, int x, int y, int z, string map, bool sound=true)
+{
+if(index>-1)
+{
+players[index].x=x;
+players[index].y=y;
+players[index].z=z;
+players[index].map=map;
+send_plus(players[index].peer_id,"update_player "+players[index].x+" "+players[index].y+" "+players[index].z+" "+players[index].map+" "+players[index].name,5,false);
+file f;
+f.open("maps/"+players[index].map+".map","rb");
+send_reliable(players[index].peer_id,"mapdata "+f.read(),0);
+f.close();
+send_reliable(players[index].peer_id,"move "+players[index].x+" "+players[index].y+" "+players[index].z,0);
+if(sound)
+play("move",players[index].x,players[index].y,players[index].z,players[index].map,players[index]);
+}
+}
+bool player_exists(int index)
+{
+for(uint i=0; i<players.length(); i++)
+{
+if(i==index)
+{
+return true;
+}
+}
+return false;
+}
+string randomstring(uint length=10,int mode=1)
+{
+string lets="abcdefghijklmnopqrstuvwxyz";
+string nums="1234567890";
+string temp;
+if(mode==1)
+temp=lets+nums;
+else if(mode==2)
+temp=nums;
+else if(mode==3)
+temp=lets;
+string ret;
+for(uint i=0; i<length; i++)
+{
+ret=ret+temp[random(0,(temp.length()-1))];
+}
+return ret;
+}
+int select_random_player(string noname="")
+{
+int[] indexs;
+for(uint i=0; i<players.length(); i++)
+{
+if(players[i].dead==false and players[i].invinsible==false and players[i].name!=noname)
+{
+indexs.insert_last(get_player_index(players[i].peer_id));
+}
+}
+if(indexs.length()<=0)
+{
+return -1;
+}
+else
+{
+return indexs[random(0,indexs.length()-1)];
+}
+}
+double stn(string n)
+{
+return string_to_number(n);
+}
+void update_map(string mapname)
+{
+file f;
+f.open("maps/"+mapname+".map","rb");
+string mdata=f.read();
+f.close();
+for(uint i=0; i<players.length(); i++)
+{
+if(players[i].map==mapname)
+{
+send_reliable(players[i].peer_id,"mapdata "+mdata,0);
+}
+}
+}
+string get_map_data(string mapname)
+{
+if(!file_exists("maps/"+mapname+".map"))
+{
+return "That map does not exist.";
+}
+file f;
+f.open("maps/"+mapname+".map","rb");
+string ret=f.read();
+f.close();
+if(ret=="" or ret=="\r\n")
+{
+return "Empty map.";
+}
+return ret;
+}
+string convert_to_list(string[] arr)
+{
+string list;
+if(arr.length()==0) return "";
+if(arr.length()==1) return arr[0];
+for(uint i=0; i<arr.length(); i++)
+{
+if(i==arr.length()-1)
+list+=" and "+arr[i];
+else
+list+=arr[i]+", ";
+}
+return list;
+}
+string convert_to_list(int[] arr)
+{
+string list;
+if(arr.length()==0) return "";
+if(arr.length()==1) return arr[0];
+for(uint i=0; i<arr.length(); i++)
+{
+if(i==arr.length()-1)
+list+=" and "+arr[i];
+else
+list+=arr[i]+", ";
+}
+return list;
+}
+bool is_on_server(string pname)
+{
+for(uint i=0; i<players.length(); i++)
+{
+if(players[i].name==pname)
+return true;
+}
+return false;
+}
+bool is_on_server(int index)
+{
+for(uint i=0; i<players.length(); i++)
+{
+if(i==index)
+return true;
+}
+return false;
+}
+string[] get_admin_list()
+{
+string[] a;
+string[] chars=find_directories("chars/*");
+for(uint i=0; i<chars.length(); i++)
+{
+if(file_exists("chars/"+chars[i]+"/admin.usr")==true)
+{
+a.insert_last(chars[i]);
+}
+}
+return a;
+}
+void remove_from_server(int ind2=-1) {
+if(ind2>-1) {
+save_char(ind2);
+send_reliable(0,"offline "+players[ind2].x+" "+players[ind2].y+" "+players[ind2].z+" "+players[ind2].name+" "+players[ind2].map,0);
+player_peers.delete(players[ind2].peer_id);
+player_names.delete(players[ind2].name);
+@players[ind2]=null;
+players.remove_at(ind2);
+refresh_player_list();
+}
+}
+int get_nearest_player(int px, int py, int pz, string pmap, int pindex=-1)
+{
+int current_distance=-1;
+int final_index=-1;
+for(uint i=0; i<players.length(); i++)
+{
+if(players[i].map!=pmap or i==pindex or players[i].invinsible or players[i].dead or players[i].safe)
+{
+continue;
+}
+int dist=get_3d_distance(px, py, pz, players[i].x, players[i].y, players[i].z);
+if(current_distance==-1)
+{
+current_distance=dist;
+final_index=i;
+}
+else
+{
+if(dist<current_distance)
+{
+current_distance=dist;
+final_index=i;
+}
+}
+}
+return final_index;
+}
+void load_server_data() {
+load_all_lockers();
+load_all_teams();
+killmsgs=string_split(file_get_contents("killmsgs.svr"),"\r\n",false);
+string[] d=string_split(file_get_contents("fooditems.svr"),"\r\n",false);
+for(uint i=0; i<d.length(); i+=1) {
+string[] d2=string_split(d[i],"=",false);
+if(d2.length()==2) {
+fooditems.set(d2[0],stn(d2[1]));
+}
+}
+}
+dictionary wdata;
+void setupserver() {
+wdata.set("fists","200 norm");
+wdata.set("knife","180 norm");
+wdata.set("pistol","300 norm");
+wdata.set("shotgun","1400 norm");
+wdata.set("machinegun","120 auto");
+wdata.set("tiny_mg","80 auto");
+wdata.set("rifle","1500 norm");
+wdata.set("rocket_launcher","2500 norm");
+}
+
+string killmsg(string player1, string player2, string player1weapon)
+{
+string temp=killmsgs[random(0,killmsgs.length()-1)];
+temp=string_replace(temp,"%1",player1,true);
+temp=string_replace(temp,"%2",player2,true);
+temp=string_replace(temp,"%3",player1weapon,true);
+log("eventstream","death: "+temp);
+return temp;
+}
+
+string get_char_val(string name, string value)
+{
+string cf="chars/"+name;
+string ret;
+file c;
+c.open(cf+"/"+value+".usr","rb");
+ret=c.read();
+c.close();
+return ret;
+}
+
+void refresh_player_list() {
+player_peers.delete_all();
+player_names.delete_all();
+for(uint i=0; i<players.length(); i+=1) {
+player_names.set(players[i].name,i);
+player_peers.set(players[i].peer_id,i);
+}
+}
+int get_best_player()
+{
+int current_killcount=-1;
+int final_index=-1;
+for(uint i=0; i<players.length(); i++)
+{
+int count=players[i].kills;
+if(current_killcount==-1)
+{
+current_killcount=count;
+final_index=i;
+}
+else
+{
+if(count>current_killcount)
+{
+current_killcount=count;
+final_index=i;
+}
+}
+}
+return final_index;
+}
+void adminsend(string message, int channel, bool reliable=true) {
+for(uint i=0; i<players.length(); i+=1) {
+if(players[i].is_admin()) {
+if(reliable) send_reliable(players[i].peer_id, message, channel);
+else
+send_unreliable(players[i].peer_id, message, channel);
+}
+}
+}
+
+void send_serverbox(int peerid, int mode=0, int maxlength=-1, int autosend=0, int keypresses=-1, string sendtext="server_box", string text="enter text")
+{
+send_reliable(peerid,"input ++"+mode+"++"+maxlength+"++"+autosend+"++"+keypresses+"++"+sendtext+"++"+text,0);
+}
+string get_script_path()
+{
+string scriptpath;
+if(SCRIPT_COMPILED==false)
+{
+scriptpath=SCRIPT_CURRENT_FILE;
+}
+else
+{
+scriptpath=SCRIPT_EXECUTABLE;
+}
+return scriptpath;
+}

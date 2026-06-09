@@ -1,0 +1,74 @@
+#include "bgt_compat.nvgt"
+#include"sound_pool.nvgt"
+#include"includes/m_pro.nvgt"
+#include"includes/speech.nvgt"
+DFSpeech s;
+dynamic_menu_pro m;
+pack_file obj;
+string fn;
+string decryption_key;
+bool connected=false;
+void main()
+{
+show_window("Sounds viewer");
+fn=input_box("File name","Enter the file of the sounds you wish to view");
+if(fn=="")
+{
+alert("exiting","");
+exit();
+}
+decryption_key=input_box("Key?","Now enter the key of the sounds file. Type \"none\" if there is no key.");
+if(decryption_key=="")
+exit();
+set_sound_storage(fn);
+if(decryption_key!="none") 
+set_sound_decryption_key(decryption_key,true);
+bool s=obj.open(fn);
+if(s==false)
+{
+alert("Error!","Could not open the "+fn+" file. Now exiting...");
+exit();
+}
+string[] list=obj.list_files();
+setupmenu();
+for(uint i=0; i<list.length(); i++)
+{
+if((string_contains(list[i],".ogg",1)>-1 or string_contains(list[i],".wav",1)>-1))
+m.add_item(list[i],list[i]);
+}
+int mres=m.run("Sounds menu",true);
+if(mres==0)
+{
+alert("alert","Exiting");
+exit();
+}
+else
+{
+alert("name",m.get_item_name(mres));
+}
+}
+void setupmenu()
+{
+m.reset(true);
+m.enable_home_and_end=true;
+m.enable_first_letter_navigation=true;
+m.enable_up_and_down=true;
+}
+void send_reliable(int a,string b,int c) {
+}
+int bool_to_int(bool b)
+{
+if(b==true)
+{
+return 1;
+}
+return 0;
+}
+bool int_to_bool(int num)
+{
+if(num==1)
+{
+return true;
+}
+return false;
+}

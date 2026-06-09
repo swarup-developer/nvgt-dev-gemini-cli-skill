@@ -1,0 +1,6 @@
+mapname:quiet
+maxx:300
+maxy:300
+maxz:300
+platform:0:300:0:300:0:0:carpet
+zone:0:300:0:300:0:300:Administrative Quiet Area 

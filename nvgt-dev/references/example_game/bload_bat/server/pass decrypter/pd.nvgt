@@ -1,0 +1,12 @@
+#include"bgt_compat.nvgt"
+void main()
+{
+file f;
+f.open("pass.usr","rb");
+string pass=f.read();
+f.close();
+pass=string_decrypt(pass,"bloodbathpasswordencryption823");
+alert("Alert","The password is "+pass);
+clipboard_copy_text(pass);
+exit();
+}

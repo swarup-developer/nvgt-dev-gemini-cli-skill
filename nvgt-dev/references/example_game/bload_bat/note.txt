@@ -1,0 +1,1 @@
+This is very suitable for referencing its 3D audio system, but it requires the King Audio plugin.

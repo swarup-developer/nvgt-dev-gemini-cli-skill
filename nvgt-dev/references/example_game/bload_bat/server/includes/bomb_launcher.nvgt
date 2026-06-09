@@ -1,0 +1,80 @@
+bomb_launcher@[] bomb_launchers(0);
+class bomb_launcher
+{
+int x;
+int y;
+int z;
+string map;
+string owner;
+timer launchtimer;
+int launchtime=14344;
+int fail=random(1,5);
+int index=-1,target=-1;
+bomb_launcher(int bx, int by, int bz, string bmap, string bowner)
+{
+x=bx;
+y=by;
+z=bz;
+map=bmap;
+owner=bowner;
+play("bomb_launcherpowerup",x,y,z,map);
+index=get_player_index_from(owner);
+}
+}
+void bomblauncherloop()
+{
+for(uint i=0; i<bomb_launchers.length(); i++)
+{
+int pindex=bomb_launchers[i].index;
+if(bomb_launchers[i].launchtimer.elapsed>=bomb_launchers[i].launchtime)
+{
+if(bomb_launchers[i].fail==1)
+{
+play("bomb_launcherfail",bomb_launchers[i].x,bomb_launchers[i].y,bomb_launchers[i].z,bomb_launchers[i].map);
+players[pindex].give("bomb_launcher",1);
+send_reliable(players[pindex].peer_id,"startmoving",0);
+bomb_launchers.remove_at(i);
+continue;
+}
+else
+{
+bool nearbyplayer;
+for(uint p=0; p<players.length(); p++)
+{
+if(get_3d_distance(players[p].x, players[p].y, players[p].z, bomb_launchers[i].x, bomb_launchers[i].y, bomb_launchers[i].z)<=100 and players[p].map==bomb_launchers[i].map and players[p].name!=players[pindex].name and players[p].dead==false and players[p].invinsible==false and players[p].safe==false)
+{
+nearbyplayer=true;
+bomb_launchers[i].target=p;
+}
+else
+{
+nearbyplayer=false;
+}
+}
+if(nearbyplayer==false) {
+spawn_bomb(bomb_launchers[i].x, bomb_launchers[i].y, bomb_launchers[i].z, bomb_launchers[i].map, bomb_launchers[i].owner);
+players[pindex].give("bomb",-1);
+send_reliable(players[pindex].peer_id,"startmoving",0);
+}
+else {
+int t=bomb_launchers[i].target;
+spawn_bomb(players[t].x,players[t].y,players[t].z,players[t].map,bomb_launchers[i].owner);
+send_reliable(players[pindex].peer_id,"targeting "+players[t].name+"...",2);
+players[pindex].give("bomb",-1);
+send_reliable(players[pindex].peer_id,"startmoving",0);
+}
+bomb_launchers.remove_at(i);
+continue;
+}
+}
+}
+}
+void spawn_bomb_launcher(int x, int y, int z, string map, string owner)
+{
+bomb_launcher b(x, y, z, map, owner);
+bomb_launchers.insert_last(b);
+}
+void destroy_all_bomb_launchers()
+{
+bomb_launchers.resize(0);
+}

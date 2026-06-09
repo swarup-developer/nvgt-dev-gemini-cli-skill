@@ -1,0 +1,242 @@
+dynamic_menu_pro m;
+void mainmenu()
+{
+setupmenu(true);
+if(rules==1) {
+m.add_item_tts("Login","play");
+m.add_item_tts("Sign up","create");
+}
+m.add_item_tts("Configure options","options");
+m.add_item_tts("If you like the game, please consider sending in a small donation. Donations help pay for server costs, sound libraries etc.","donate");
+m.add_item_tts((rules==0?"You have not agreed to the bloodbath rules. Press enter to agree":"You have agreed to the bloodbath rules, thank you!"),"rules","",(rules==0?true:false));
+if(beta==true)
+{
+m.add_item_tts("You are currently connecting to the "+(mainserver==true?"Public server":"Beta server")+". Press enter to change.","connectmode");
+}
+m.add_item_tts("Exit","exit");
+int mres=m.run("Main Menu",true);
+if (m.get_item_name(mres)=="play")
+{
+m.fade_music(30);
+login();
+}
+else if(m.get_item_name(mres)=="create")
+{
+m.fade_music(30);
+create();
+}
+else if(m.get_item_name(mres)=="connectmode")
+{
+if(mainserver==true)
+mainserver=false;
+else
+mainserver=true;
+speak("Now connecting to the "+(mainserver==true?"Public server":"Beta server")+".");
+mainmenu();
+}
+else if(m.get_item_name(mres)=="rules") {
+int r=question("Confirmation","Do you agree to the bloodbath rules? These rules can be found in !rules.txt in your copy of bloodbath. By clicking yes, you agree that you have read and understood these rules. Do you agree?");
+if(r==1) {
+rules=r;
+writeprefs();
+}
+else {
+alert("exiting","This program will now exit");
+exit();
+}
+mainmenu();
+}
+else if(m.get_item_name(mres)=="options")
+{
+m.fade_music(30);
+optionsmenu();
+}
+else if(m.get_item_name(mres)=="donate")
+{
+m.stop_music();
+speak("Launching website...");
+run("c:\\windows\\explorer.exe","https://paypal.me/jerkatron",false,false);
+mainmenu();
+}
+else if(m.get_item_name(mres)=="exit" or mres==0)
+{
+m.fade_music(30);
+writeprefs();
+exit();
+}
+}
+void optionsmenu()
+{
+setupmenu();
+m.add_item_tts("Setup an existing account","setupaccountnow");
+if(playlogo==1)
+m.add_item_tts("Disable playing of logo at startup","logo");
+else
+m.add_item_tts("Enable playing of logo at startup","logo");
+if(bufferlogging==1)
+m.add_item_tts("Disable buffer logging","buffer");
+else
+m.add_item_tts("Enable buffer logging","buffer");
+m.add_item_tts("Go back","back");
+int mres=m.run("Options menu. Select an option.",true);
+if(m.get_item_name(mres)=="setupaccountnow")
+{
+string user=v.input("Enter your username.");
+string pw=v.input("Enter your password.",false,true);
+if(string_contains(user," ",1)>-1 or string_contains(pw," ",1)>-1)
+{
+dlg("Sorry, the username / password combination you entered is not valid. Please remember that usernames and passwords may not include spaces. If you continue to get this error and are entering your username / password correctly without any spaces or other forbidden simbles, contact a developer.");
+mainmenu();
+}
+else
+{
+name=user;
+password=pw;
+writeprefs();
+speak("Account information updated successfully.");
+optionsmenu();
+}
+}
+else if(m.get_item_name(mres)=="logo")
+{
+if(playlogo==1)
+playlogo=0;
+else
+playlogo=1;
+writeprefs();
+optionsmenu();
+}
+else if(m.get_item_name(mres)=="buffer")
+{
+if(bufferlogging==1)
+bufferlogging=0;
+else
+bufferlogging=1;
+writeprefs();
+optionsmenu();
+}
+else if(m.get_item_name(mres)=="back" or mres==0)
+{
+mainmenu();
+}
+}
+void setupmenu(bool music=false, bool online=false)
+{
+m.reset(true);
+if (music==true)
+m.add_music("menumus.ogg");
+m.enable_up_and_down=true;
+m.enable_left_and_right=false;
+m.enable_side_scrolling=false;
+m.wrap=true;
+m.wrap_sound="menuwrap.ogg";
+m.enable_home_and_end=true;
+m.repeat_items_at_edges=true;
+m.enable_first_letter_navigation=true;
+m.edge_sound="menuedge.ogg";
+m.click_sound="menumove.ogg";
+m.enter_sound="menuenter.ogg";
+if(online)
+m.set_callback(menunet,"");
+}
+int menunet(dynamic_menu_pro@m, string stuff)
+{
+mainloop();
+return 0;
+}
+string select_player(string text, string data)
+{
+setupmenu(false, true);
+string[] parsed=string_split(data, "\r\n", true);
+for(uint i=0; i<parsed.length(); i++)
+{
+m.add_item_tts(parsed[i],parsed[i]);
+}
+m.add_item_tts("Go back","back");
+int mres=m.run(text, true);
+if(m.get_item_name(mres)=="back" or mres==0)
+{
+return "";
+}
+else
+{
+return m.get_item_name(mres);
+}
+}
+void invmenu()
+{
+if(inv.get_keys().length()==0)
+{
+speak("No items");
+return;
+}
+m.reset(true);
+m.enable_up_and_down=true;
+m.wrap=true;
+m.enable_multi_letter_navigation=true;
+m.allow_escape=true;
+m.click_sound="invmove.ogg";
+m.enter_sound="invclose.ogg";
+m.open_sound="invopen.ogg";
+m.set_callback(searchcall,"");
+string[] items=inv.get_keys();
+int a;
+for(uint i=0; i<items.length(); i++)
+{
+inv.get(items[i], a);
+m.add_item_tts(items[i]+": You have "+a+".",items[i]);
+}
+int mres=m.run("Inventory menu. You have "+items.length()+" items.",true);
+if(mres==0)
+{
+m.play_enter_sound();
+return;
+}
+else
+{
+invpos=mres-1;
+return;
+}
+}
+void serverside_menu(string sndtxt, string menu, string menuitems)
+{
+setupmenu(false, true);
+m.click_sound='';
+m.enter_sound="";
+if(menuitems=="")
+return;
+string[] items=string_split(menuitems,"[]",false);
+for(uint i=0; i<items.length(); i++)
+{
+string[] parsed=string_split(items[i],"{}",false);
+m.add_item_tts(parsed[0],parsed[1]);
+}
+int mres=m.run(menu,true);
+if(m.get_item_name(mres)=="back" or mres==0)
+send_reliable(0,sndtxt+" back",0);
+else
+{
+send_reliable(0,sndtxt+" "+m.get_item_name(mres),0);
+}
+}
+int searchcall(dynamic_menu_pro@test, string data) {
+mainloop();
+if(key_pressed(KEY_SPACE)) {
+string stext=v.input("Enter item  name", true, false);
+if(stext=="") {
+speak("ok");
+}
+else {
+int search=search_inv(stext);
+if(search==-1) {
+speak("No items found matching your search keywords");
+}
+else {
+m.menu_position=search;
+m.play_click_sound();
+speak(m.item_list[search].option);
+}
+}
+}
+return 0;
+}

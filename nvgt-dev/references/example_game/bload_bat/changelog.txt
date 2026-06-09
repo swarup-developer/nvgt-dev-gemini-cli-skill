@@ -1,0 +1,176 @@
+New in 1.0, nvgt version by blood killer. please do not remove these changes.
+fixed a few bugs
+fixed a bug with weapons in numbers
+removed game engine by mason
+rewrote maps to new platform system
+New in 1.0
+Lowered down the wirebomb's damage a little.
+There are now bloodbath teams you can have! Please note that the team limit is 5, so make sure you're sure who you want to add. Use /teamcreate to create, /teamjoin <password> to join a team, /teampass to update the password, and /t sends chats, /teampoints will check for team points used later to get coins, etc. Please note that adding someone to your team will not stop you from hitting them with weapons and bombs, it'll just merge kills and collect points.
+Adds lockers you can place on the map! Get a team together, collect metal and create a locker! You can store 20 items of each in a locker, so store sparingly!
+Finally installs keyhook for users that use jaws.
+Adds multiletter navigation in the inventory!
+Fixes a very interesting bug with inventory syncing. No more waiting 10 seconds after you collected something or admins giving you items, for them to show up in the inventory menu/inventory cycle.
+Rewrote the server code for chats, making it much more stable. In addition to this, the chat sound is now muted if chats are turned off!
+Added server-side controlled input boxes!
+New in 0.996
+The chat sound is much better.
+Makes logging in much faster again.
+Fixes a few bugs with the client.
+New in 0.995
+Fixes sounds updater.
+New in 0.994
+More lag fixes when firing weapons, thanks sneak.
+Added home and end to increase / decrease the game's master volume.
+New in 0.993
+This update only fixes a critical bug with automatic weapons. You can no longer log off, log back in and automaticly fire a weapon.
+New in 0.992
+Added f5 and f6 to toggle chats and online / offline messages respectively.
+Fixed the map wasn't resetting properly when changing maps.
+Changed the way too intrusive ping sounds back to the old ones.
+Added a clientside message of the day system.
+Fixed speedhack detection when in the sound update or client update dialogs.
+New in 0.991
+Fixes walking.
+New in 0.99
+Big changes on how the core of the game handles items and players. This should do a lot with lag.
+New in 0.981
+Fixes a bug with the tracking system.
+New in 0.98
+Per popular request, reenabled beacons.
+You can now hold shift with w to start tracking the player automaticly.
+Changed back to the old server. Apparently this new one wasn't nearly as good as we originally thought.
+New in 0.97
+Fixed a bug that would sometimes cause you to be falsely accused of speedhacking when pressing escape while the client was connecting to the server.
+Changed servers again to a much more powerful and better one.
+New in 0.96
+Fixed false speedhack detection when logging in.
+New in 0.95
+Added a way to update the bloodbath sounds without requiring client updates.
+Makes tracking less laggy.
+Turns down the horn.
+New in 0.94
+Fixed speedhacking.
+New in 0.93
+Finally added speedhack protection.
+Updated sounds.
+Removed food.
+New in 0.92
+Changes server.
+New in 0.91
+Due to popular request, added the ability to toggle player beacons with the f4 key.
+Fixed updater.
+New in 0.9
+You can now see players near you with the P key, as requested by many users.
+Adds ammo system!
+New in 0.84
+Now when you die, a corpse of you spawns that can be collected and there for looted by other players!
+Redesigned a lot of sounds again, again thanks to Omer and Ivan.
+Added a readme and a rules document.
+Now, you must agree to the bloodbath rules in order to play.
+New in 0.83
+Added some admin things.
+Prepares for first public beta release.
+New in 0.82
+Changed servers.
+New in 0.81
+Cleaned up the food system. Speed increases / decreases based on hunger are now a lot more logical.
+New players now start out with some food to get them going.
+New in 0.8
+Added an options menu.
+Finally added a banning system.
+Fixed a bug that would sometimes cause you to hear pong instead of the ping result when attempting to ping the server.
+New in 0.7
+In prepperation for public release, the following things have been done:
+Added an updater,
+Added proper clientside control for beta / public servers.
+You must now be running the latest version of the client in order for connection to the server  to be successfull.
+In an effert to balance out the weapon system, the vulcan minigun has been removed. Some adjustments have also been made to the shotgun to make it a little less over powered.
+Redid the safe zone system slightly. The safe zone is now it's own map, and you exit by going to 20, 20 and pressing shift + enter. You will be teleported to a random spot on main when you exit, and you will not be able to go back until you die or commit suicide.
+It is now possible to disarm someone's mine if you are at least 1 tile away from it! Just press shift + enter, and the mine will be deactivated and available in your inventory for you to use. You can also do this to your own mines.
+Changed / improved a lot of the game's sounds, thanks omer.
+New in 0.62
+Changed servers.
+New in 0.61
+Now if you hit someone with a weapon, you get a small little ping sound as a notification.
+New in 0.6
+Fixed a bug where the capbeep sound wouldn't play.
+Added safe zones.
+Added a camera! Hold in G to use. You can use the arrow keys to move it up, down, left and right, and also move it up or down by pressing page up / down. You can also press T to replay the tile at the camera's current position, and D to speak some information about the camera's current tile.
+Removed the speech buffer due to runtime error related issues and the fact that it wasn't ever really used.
+Added a little beep sound that plays while a map is loading.
+Added ultrabombs! Place one, then insert 50 coins into the bomb. Once the required amount of coins has been inserted, the bomb will start counting down. When it's done, the bomb will explode nuking everything on the map! You will need to have a lot of health to survive this, or better hope you're quick enough to stop the person from starting the bomb...
+Now you can't fire when you are stunned!
+Added poisonstars! Launch one and it will start going after the closest player. If it hits, that player will start walking slower and slower, and start losing health. If they are poisoned for long enough, they will be knocked out! While you are knocked out you will be unable to move, and you may or may not be able to hear what's around!
+Added a sleep system! It's currently buggy though.
+New in 0.53
+Added some more AI types.
+Added a sound that plays when an AI is spawned.
+Added position information to inventory.
+New in 0.52
+Fixed the footsteps being all messed up on some of the platforms.
+Made buffers export to a logs folder when disconnecting.
+Added two new weapons.
+Added ricochet support to weapons. The bullet type weapons all use the standerd ricochet sounds, while the special guns and melee weapons all have ricochet sounds of there own.
+Added walls and zones to maps!
+New in 0.51
+Added serverside menu support.
+Fixed a very annoying bug where your menu sounds would play like 5 times when online.
+Slightly redesigned how the welcome message is received.
+Added a PM (Private message) system. Type /pm to send someone a pm, /reply or /r to reply to the last person that sent you a pm.
+Added a new buffer for server notifications.
+New in 0.5
+Added some more sounds for maps.
+Added online AI's! These are basically like regular players, accept, well, they're AI's. Good for practising / getting some easy kills.
+Added an inventory menu. Press I to access this menu. It's currently buggy though.
+You can now hold shift when pressing tab to move backwords through the inventory.
+Added mines! Step on one of these, and you as well as any player within 50 feet of you had better start writing your will.
+Added an admin system.
+Added a builder system.
+New in 0.41
+Fixed the menu doing interesting things when hitting escape.
+Cleaned up login code.
+Now if the game is unable to connect, you will be alerted and the game will return to the main menu.
+Added typing sounds.
+You can now press tab in input boxes to get the current title.
+You can now press shift + backspace when in input boxes to clear the intire contents of the input box.
+Added support for secure input boxes, for inputting inside a password field and things sutch as that.
+Your character repeat and capmode settings now save in input boxes.
+Switched to a new server, thanks joseph weakland.
+New in 0.4
+Added bombs and bomb launchers! These things are really cool! First, make sure you have some bombs to operate the launcher, then use the bomb launcher and watch as you place it. Then, asuming all goes well, a bomb will be dropped on any player within 100 feet of your location. Be careful however, if there are no players within a hundred feet of your location, the bomb will be dropped on you instead! Bombs come with very little warn time and a lot of damage, very good for catching players unawares! But that's not all. Remember I said if all goes well? Well, there's a chance of these randomly failing! If they fail you won't lose your launcher, but still, that's valuable time lost and your element of surprise has most likely vannished.
+Intigrated the server handled moving sound system, for future use.
+Now when a timebomb explodes, there is a random chance that it will start a fire! Fires hurt, let's just say that. Thankfully, they go away after 5 minutes has elapsed.
+Updated the timebomb sounds.
+New in 0.33
+Finally fixed that annoying connection bug, so you can now login multiple times without restarting the client!
+Added a /suicide command for those who would rather choose not to live.
+Updated the virtualizer to the newer and better one, the one used in sbp. Note that for some reason, I can't get the cap sound to play properly, but that will hopefully be fixed soon.
+Also updated the buffer class to the one used in sbp and SBYW, adding buffer beeping along with a hole host of other good things.
+We are now using df speech for the game's speech. This will in the future allow us to do things like change speech output modes.
+You can now press page up / down to read what the speech said last. Press control plus page up / down to jump to home and end.
+Added a new way you can show your support for the game.
+New in 0.32
+You can now tell if items are below or behind you.
+Finally, at long last added tracking! Hit t, then select the player you want to track. Press w there after to continue seeing where that player is.
+New in 0.31
+Added player beacons! These play a little blip blip sound at a players position. No more second guessing where someone is based on there jumps and footsteps in the middle of a fight!
+Added horns! These tell all players on the server of your position, perfect if you want to start a fight!
+Added some things you can do with the function keys. f1 checks message of the day, f2 checks uptime, thanks lucas brown for the neet little function, and f3 test pings the server.
+New in 0.3
+Added an inventory system along with items! Thanks mason for the nice little inventory!
+Added timebombs! These things hurt, a lot, so if you hear 1 beeping, my advice is to run away as fast as possible.
+No more logging out and back in again to reset your health!
+New in 0.21
+Fixed a bug where in a menu, you could still hear server events.
+Now, weapons that shouldn't be automatic are not.
+Added an option in the main menu to setup an existing account.
+Updated the masonasons engine to the new ver.
+New in 0.2
+Added jumping and falling, just press space to jump as usual.
+Added a way for me to update the server.
+New in 0.12
+Added a way for the server to move the player, currently used for respawning.
+Added killing and diing!
+New in 0.11
+The first few weapons should now fire properly! Woot!
+Your stuff should now properly save when disconnecting from the server.

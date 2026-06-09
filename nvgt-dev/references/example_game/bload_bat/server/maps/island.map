@@ -1,0 +1,41 @@
+mapname:main
+maxx:500
+maxy:500
+maxz:500
+platform:0:500:0:500:0:0:dirt
+platform:0:500:0:10:0:0:shallow
+platform:0:500:11:25:0:0:water
+platform:0:500:25:50:0:0:mud
+platform:0:500:50:70:0:0:sand
+platform:0:500:490:500:0:0:shallow
+platform:0:500:480:490:0:0:water
+platform:0:500:460:480:0:0:mud
+platform:0:500:440:460:0:0:sand
+platform:0:10:0:500:0:0:shallow
+platform:11:22:0:500:0:0:water
+platform:490:500:0:500:0:0:shallow
+platform:480:490:0:500:0:0:water
+platform:470:480:0:500:0:0:mud
+platform:90:200:90:400:0:0:concrete2
+platform:290:400:90:400:0:0:concrete
+platform:400:450:250:350:0:0:grass2
+src:0:500:0:500:0:20:birds2.ogg
+src:0:500:0:50:0:20:lake.ogg
+src:0:500:450:500:0:20:lake.ogg
+src:0:1:0:500:0:20:water5.ogg
+src:499:500:0:500:0:20:water5.ogg
+src:0:500:0:0:0:20:water4.ogg
+src:0:500:499:500:0:20:water4.ogg
+platform:300:350:200:250:0:0:cavegrounds
+platform:300:350:251:251:0:0:walldirt
+platform:23:27:71:439:0:0:mud
+platform:27:35:71:439:0:0:sand
+src:0:10:60:480:0:20:lake.ogg
+src:490:500:60:480:0:20:lake.ogg
+platform:50:150:80:150:0:0:grass2
+platform:35:50:80:100:0:0:concrete2
+platform:35:50:60:70:0:0:concrete
+zone:0:500:0:1:0:20:edge of the waterfall
+zone:0:500:499:500:0:20:edge of the waterfall
+zone:0:1:0:500:0:20:edge of the waterfall
+zone:499:500:0:500:0:20:edge of the waterfall

@@ -1,0 +1,10 @@
+mapname:safezone
+maxx:20
+maxy:20
+maxz:20
+platform:0:20:0:20:0:0:carpet
+src:0:20:0:20:0:20:hum.ogg
+zone:0:20:0:20:0:20:Safe zone. To exit, go to 20, 20, 0 and press shift enter.
+safezone:0:20:0:20:0:20
+zone:20:20:20:20:0:20:To exit the safe zone, press shift + enter. Warning, it is not possible to go back!
+inselection

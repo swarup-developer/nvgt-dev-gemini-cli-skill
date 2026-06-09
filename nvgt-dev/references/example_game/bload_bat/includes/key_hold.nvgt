@@ -1,0 +1,63 @@
+const uint KEY_PRIOR = KEY_PAGEUP;
+const uint KEY_NEXT = KEY_PAGEDOWN;
+const uint KEY_LCONTROL = KEY_LCTRL;
+const uint KEY_RCONTROL = KEY_RCTRL;
+const uint KEY_LWIN = KEY_LGUI;
+const uint KEY_RWIN = KEY_RGUI;
+const uint KEY_LMENU = KEY_LALT;
+const uint KEY_RMENU = KEY_RALT;
+const uint KEY_LBRACKET = KEY_LEFTBRACKET;
+const uint KEY_RBRACKET = KEY_RIGHTBRACKET;
+const uint KEY_NUMPADENTER = KEY_NUMPAD_ENTER;
+const uint KEY_DASH = KEY_MINUS;
+typedef int long;
+typedef uint ulong;
+typedef int16 short;
+typedef uint16 ushort;
+
+class key_hold
+{
+bool status;
+short key_flag=0;
+int key_code;
+int repeat_time;
+int setting_1;
+int setting_2;
+timer key_timer;
+key_hold(int _key_code, int _setting_1, int _setting_2)
+{
+key_code=_key_code;
+setting_1=_setting_1;
+setting_2=_setting_2;
+repeat_time=setting_1;
+}
+bool pressing()
+{
+status=key_down(key_code);
+if(status==false)
+{
+repeat_time=0;
+key_timer.restart();
+key_flag=0;
+return false;
+}
+if(key_timer.elapsed>=repeat_time)
+{
+switch(key_flag)
+{
+case 0:
+key_flag=1;
+repeat_time=setting_1;
+key_timer.restart();
+break;
+case 1:
+repeat_time=setting_2;
+key_timer.restart();
+break;
+}
+return true;
+}
+return false;
+}
+}
+

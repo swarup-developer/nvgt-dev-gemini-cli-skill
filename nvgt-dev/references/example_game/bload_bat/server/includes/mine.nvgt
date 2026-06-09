@@ -1,0 +1,66 @@
+mine@[] mines(0);
+class mine
+{
+int x, y, z;
+string map, owner;
+bool d=false;
+mine(int mx, int my, int mz, string mmap, string mowner)
+{
+x=mx;
+y=my;
+z=mz;
+map=mmap;
+owner=mowner;
+play("mineplace",x,y,z,map);
+}
+}
+void mineloop()
+{
+for(uint i=0; i<mines.length(); i++)
+{
+for(uint i2=0; i2<players.length(); i2++)
+{
+if(players[i2].dead or players[i2].invinsible or players[i2].safe) continue;
+if(players[i2].x==mines[i].x and players[i2].y==mines[i].y and players[i2].z==mines[i].z and players[i2].map==mines[i].map and players[i2].name!=mines[i].owner and mines[i].d==false)
+{
+play("mine_explode",mines[i].x,mines[i].y,mines[i].z,mines[i].map);
+send_reliable(0,"distsound mine_explodedist "+mines[i].x+" "+mines[i].y+" "+mines[i].z+" "+mines[i].map,0);
+for(uint p=0; p<players.length(); p++)
+{
+if(players[p].dead or players[p].invinsible or players[p].safe) continue;
+if(get_3d_distance(mines[i].x,mines[i].y,mines[i].z,players[p].x,players[p].y,players[p].z)<=50 and players[p].map==mines[i].map)
+{
+players[p].health-=random(250, 800);
+players[p].hitby=mines[i].owner+"'s mine";
+players[p].play_hit_sound();
+}
+}
+for(uint o=0; o<objs.length(); o++)
+{
+if(get_3d_distance(mines[i].x,mines[i].y,mines[i].z,objs[o].x,objs[o].y,objs[o].z)<=50 and mines[i].map==objs[o].map)
+{
+send_reliable(0,"remitem "+objs[o].id,0);
+play("itembreak"+random(1,3),objs[o].x,objs[o].y,objs[o].z,objs[o].map);
+objs.remove_at(o);
+}
+}
+mines[i].d=true;
+}
+}
+if(mines[i].d==true)
+{
+@mines[i]=null;
+mines.remove_at(i);
+continue;
+}
+}
+}
+void spawn_mine(int x, int y, int z, string map, string owner)
+{
+mine m(x, y, z, map, owner);
+mines.insert_last(m);
+}
+void destroy_all_mines()
+{
+mines.resize(0);
+}

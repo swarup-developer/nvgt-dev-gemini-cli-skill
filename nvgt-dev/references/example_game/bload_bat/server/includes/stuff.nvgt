@@ -1,0 +1,108 @@
+string adminhelp="
+Admin help.
+The following is a list of commands you may use as an admin.
+Please do not abuse these commands. If you do, rest asured that we will know about it.
+/kick playername. Kicks a player from the server. Example: /kick charlie.
+/ban playername. Bans a player from the server. Example: /ban charlie.
+/unban playername. Unbans a player from the server. Example: /unban charlie.
+/banned. Gets a list of currently banned players.
+/move playername x y z. Moves a player to the coordinates you spesify. Example: /move charlie 0 0 0.
+/notify message. Sends out a notification to the server. For example, /notify We are about to do a server update.
+/give playername amount itemname. Gives a player something. For example: /give charlie 5 timebomb, would give the player charlie 5 timebombs.
+/setmotd new message of the day. Sets the MOTD (message of the day) to whatever you like. Example: /setmotd this is the message of the day.
+/addtomotd text to add to the message of the day. Adds to the already existing message of the day. Note that this command appends directly on to the end of the message of the day, so you'll want to be careful when using this. I'd recommend putting a full stop and or a space before the new text just to make sure the first word of the new text isn't being added to the end of a word or after a full stop with no space to sepperate them, etc. Example: /addtomotd  Also, this is the text that I would like to add to the current message of the day. Yay for that fact.
+/adminflag. Toggles your admin flag on or off. Your admin flag is what tells players you are about to do admin things, and anything said with the admin flag should be taken seriously. Only do things like kicking or banning if your admin flag is enabled. Also, note that if your admin flag is not enabled, you should be considered to be just a normal player like everyone else.
+/reboot. Reboots the server.
+/getinv playername. Gets the entire inventory of a player and sends it to you. Good for checking weather or not a player has potentially cheated items, etc etc.
+/compinfo playername. Gets the Username, Computer name, and executable path the game is being ran from on the selected player's machine.
+/compinfolog. Sends you a complete log of all the computers ever to connect to the bloodbath server. Obviously this may not always be accurate if the file is lost or damaged or something else happens, but there you go.
+As an admin, you may also use all of the builder commands and build, as well as view the builder documentation. Type /builderhelp.
+Feel free to contact me if you need help or have any questions.
+";
+string builderhelp="
+Builder help.
+The following is a list of commands available to builders, as well as a documentation on how the map syntax works.
+This sort of goes without saying, but no messing with the map, adding inappropriate things to the map, etc. Please also try your best not to mess up the map, though of corse acsidents happen, so if you do acsidentilly break something, just contact me and I'll get it fixed, as well as tell you where you went wrong so it hopefully won't happen again.
+Commands.
+The commands for building are quite simple. They are also the commands used in a lot of other online games, so this hopefully shouldn't be too much of a learning kerve.
+/rawmap. This command has no parameters. Sends you the intire contents of the map.
+/rawdata map text. Replaces the intire map text with the text you spessify. Warning! This command over writes all of the existing map data, so be extremely careful when using this. The recommended way to use this is to have the map text open in notepad or another text editer, make the changes you want to make, then copy it all to your clipboard, return to the game and type /rawdata and paste in the text.
+/writemap. This command has no parameters. Basically does the same thing as /rawmap, accept it writes the text to a file, called your map.map, your map being the map you are currently on.
+/go x y z. Teleports you to the x, y, and z coordinates you spessify. Use this if you need to test something or get to a sertan position on the map without having to walk all the way there. Do not! Use this to kill players or to make the game easier for yourself or cheat, we will find out about it and it will not end well for you.
+/changemymap mapname. Changes your map to the map you specify. Again, no using this to cheat or gain an unfair advantage over other players.
+Syntax.
+The map syntax in this game is also quite similar as that of games sutch as redspot and the killer, for the same reasons above. : is used as the delimiter.
+mapname:name. The name of the map. For example: mapname:something.
+maxx:x. The max x coordinate of the map. For example: maxx:750.
+maxy:y. The max y coordinate of the map. For example: maxy:750.
+maxz:z. The max z coordinate of the map. For example: maxz:1000.
+platform:MinX:MaxX:MinY:MaxY:Z:type. Spawns a platform with the properties you spesify. A current list of the available platform types is as follows:
+bleacher
+branch
+carpet
+carpet2
+cavegrounds
+clay
+concrete
+concrete2
+concrete3
+deck
+deepsand
+dirt
+dirt2
+dirt3
+fence
+glass
+grass
+grass2
+mud
+rocks
+rocks2
+sand
+shallow
+snow
+stairs
+stone
+street
+tile
+tile2
+tile3
+tree
+water
+Note that new platform types are added regularly, so this list may be incomplete.
+src:MinX:MaxX:MinY:MaxY:MinZ:MaxZ:soundname.ogg:id. Spawns a sound source (src) at the desired position with the desired properties. Note that the id part of the src code is depricated and will soon be removed, best to just put the id as -1 for now. The id also has to be a number. Also note that all of the available src types are and will continue to be in ogg format. A list of the available src types is as follows, though this is likely to become depricated too:
+alarm1
+alarm2
+alarm3
+alarm4
+alarm5
+alarm6
+alarm7
+amb1
+bighall
+birds
+calm
+car1
+car2
+cargo
+cave
+clock
+clock2
+desert
+desktop1
+desktop2
+desktop3
+drinkingfountain
+entrance
+park (the ambience used in the concrete area in the current bloodbath map)
+rumble
+rumble2
+sprinkle
+make sure you append all of these with the .ogg extention, else they will not work.
+x:number. Sets the x the player should start at when this map is loaded. Do not try to use this on a map like main where the player spawns on login, it could yeeld unexpected results.
+y:number. Sets the Y coordinate the player should start at when them ap is loaded. Do not try to use this on main or any map where the player spawns on login, it could yeeld unexpected results.
+z:number. Sets the z coordinate the player should start at when the map is loaded. Do not attempt to do this on main or another map where the player spawns on login, it could yeeld unexpected results.
+ispawn:MinX:MaxX:MinY:MaxY:MinZ:MaxZ:SpawnSpeed:MaxItems:ListOfItemsToBeSpawnedSepperatedByColons. Makes items spawn at the coordinates you spessify, with the spawn rate and item limit you spessify as well. For example: ispawn:0:50:0:50:0:0:750:1500:health_boost:random_item:another_random_item.
+inselection. This command has no parameters. Makes the map get loaded by the server, so basically it will be eligible for selection if the server selects a random map for something or if something else happens. Basically, this line means that your map is finished and ready to be played publicly, and the server should start using it for stuff.
+If you have any questions or aren't sure what something in here means, dont' hessitate to contact me.
+";

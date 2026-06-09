@@ -1,0 +1,36 @@
+timeitem@[] timeitems(0);
+class timeitem
+{
+string itemtype;
+string map;
+int x,y,z;
+int spawntime;
+timer stimer;
+timeitem(int tx, int ty, int tz, string tmap, string ttype,int tspawntime)
+{
+x=tx;
+y=ty;
+z=tz;
+map=tmap;
+itemtype=ttype;
+spawntime=tspawntime;
+}
+}
+void timeitemloop()
+{
+for (uint i=0; i<timeitems.length(); i++)
+{
+if (timeitems[i].stimer.elapsed>=timeitems[i].spawntime)
+{
+spawn_obj(timeitems[i].x,timeitems[i].y,timeitems[i].z,timeitems[i].map,timeitems[i].itemtype);
+@timeitems[i]=null;
+timeitems.remove_at(i);
+return;
+}
+}
+}
+void spawn_timeitem(int x,int y, int z, string map, string type,int ms=3000)
+{
+timeitem ti1(x,y,z,map,type,ms);
+timeitems.insert_last(ti1);
+}

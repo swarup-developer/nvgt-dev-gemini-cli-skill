@@ -1,0 +1,76 @@
+fire@[]fires(0);
+class fire
+{
+int x;
+int y;
+int z;
+int spread=5;
+string map;
+string smid;
+int id=random(0,99999);
+timer hurttimer, lifetimer;
+int hurttime=random(2500,4000);
+int lifetime=random(60000,300000);
+int dam;
+fire(int fx, int fy, int fz, string fmap, int fdam)
+{
+x=fx;
+y=fy;
+z=fz;
+map=fmap;
+dam=fdam;
+smid=spawn_moving_sound("fire.ogg",x,y,z,map);
+}
+}
+void fireloop()
+{
+for(uint i=0;i<fires.length();i++)
+{
+if(string_contains(get_tile_at(fires[i].x, fires[i].y, fires[i].z, fires[i].map), "water", 1)>-1 or string_contains(get_tile_at(fires[i].x, fires[i].y, fires[i].z, fires[i].map), "carpet", 1)>-1 or get_tile_at(fires[i].x, fires[i].y, fires[i].z, fires[i].map)=="shallow")
+{
+destroy_moving_sound(fires[i].smid);
+play("fireout",fires[i].x, fires[i].y, fires[i].z, fires[i].map);
+fires.remove_at(i);
+continue;
+}
+if(fires[i].hurttimer.elapsed>=fires[i].hurttime)
+{
+fires[i].hurttimer.restart();
+for(uint p=0; p<players.length(); p++)
+{
+if(players[p].dead or players[p].invinsible or players[p].safe) continue;
+if(get_3d_distance(players[p].x,players[p].y,players[p].z, fires[i].x,fires[i].y,fires[i].z)<=fires[i].spread and players[p].map==fires[i].map)
+{
+players[p].health-=fires[i].dam;
+players[p].hitby="a fire";
+players[p].play_hit_sound();
+}
+}
+for(uint o=0; o<objs.length(); o++)
+{
+if(get_3d_distance(objs[o].x,objs[o].y,objs[o].z,fires[i].x,fires[i].y,fires[i].z)<=fires[i].spread and objs[o].map==fires[i].map)
+{
+send_reliable(0,"remitem "+objs[o].id,0);
+play("itembreak"+random(1,3),objs[o].x,objs[o].y,objs[o].z,objs[o].map);
+objs.remove_at(o);
+}
+}
+}
+if(fires[i].lifetimer.elapsed>=fires[i].lifetime)
+{
+destroy_moving_sound(fires[i].smid);
+play("fireout",fires[i].x,fires[i].y,fires[i].z,fires[i].map);
+fires.remove_at(i);
+continue;
+}
+}
+}
+void spawn_fire(int x, int y, int z, string map, int dam)
+{
+fire f1(x, y, z, map, dam);
+fires.insert_last(f1);
+}
+void destroy_all_fires()
+{
+fires.resize(0);
+}

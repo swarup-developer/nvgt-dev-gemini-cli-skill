@@ -1,0 +1,42 @@
+#include"includes/bgt_compat.nvgt"
+#include"includes/dll_terlark.nvgt"
+terlark tl;
+void main()
+{
+if(file_exists("bbserver.exe")==false)
+{
+tl.dlg_error("Error!","server file is missing. compile the server and rerun this script", false);
+exit();
+}
+update();
+}
+void update()
+{
+bool connect=tl.ftp_connect("lkd-audio.ddns.net","charlie","pwsvrpw123");
+if(!connect)
+{
+tl.dlg_error("Error!","Could not connect to FTP server.",false);
+exit();
+}
+else
+{
+bool j=tl.ftp_upload("bbserver.exe","BloodbathServer/bbserver1.exe",true);
+if(!j)
+{
+tl.dlg_error("Error!","Could not upload server file.", false);
+exit();
+}
+else
+{
+file_delete("bbserver.exe");
+}
+file u;
+u.open("updating.txt","wb");
+u.close();
+j=tl.ftp_upload("updating.txt","BloodbathServer/update.txt",true);
+if(j)
+{
+file_delete("updating.txt");
+}
+}
+}

@@ -1,0 +1,78 @@
+int invpos;
+dictionary inv;
+void give(string item, int amount)
+{
+int a;
+if (!inv.exists(item))
+{
+inv.set(item,amount);
+}
+else
+{
+inv.get(item,a);
+if (a+amount<=0)
+inv.delete(item);
+else
+inv.set(item,a+amount);
+}
+}
+void cycle_inv(int direction=1)
+{
+if(direction==0) invpos-=1;
+else
+invpos+=1;
+if (invpos>=inv.get_size())
+{
+invpos=0;
+}
+else if (invpos<0)
+{
+invpos=inv.get_size()-1;
+}
+if (inv.get_size()==0)
+{
+speak("No items");
+}
+else
+{
+int a;
+inv.get(inv.get_keys()[invpos],a);
+int pos=invpos+1;
+speak(inv.get_keys()[invpos]+": "+a+". "+pos+" of "+inv.get_keys().length());
+}
+}
+void useitem()
+{
+if (inv.get_size()<=0)
+{
+speak("No items");
+}
+else
+{
+string current=inv.get_keys()[invpos];
+send_reliable(0,"useitem "+current,0);
+}
+}
+int count_total_items()
+{
+int amount=0;
+for (uint i=0; i<inv.get_keys().length(); i++)
+{
+int a;
+inv.get(inv.get_keys()[i],a);
+amount+=a;
+}
+return amount;
+}
+int search_inv(string itemkey) {
+//this will return an index with the get_keys array.
+string[] keys=inv.get_keys();
+if(itemkey=="") return -1;
+int ret=-1;
+for(uint i=0; i<keys.length(); i+=1) {
+if(string_contains(keys[i], itemkey, 1)>-1) {
+ret=i;
+}
+}
+return ret;
+}

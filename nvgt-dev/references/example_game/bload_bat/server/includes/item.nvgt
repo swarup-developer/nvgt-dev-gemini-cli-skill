@@ -1,0 +1,104 @@
+obj@[] objs(0);
+class obj
+{
+int x, y, z;
+string map;
+string type;
+timer looptimer;
+timer ochecktimer;
+int ochecktime=20;
+int id=-1;
+string extras;
+int looptime=400;
+timer lifetimer;
+int lifetime=60000;
+obj(int ox, int oy, int oz, string omap, string otype)
+{
+x=ox;
+y=oy;
+z=oz;
+map=omap;
+type=otype;
+id=random(111,999999);
+}
+}
+void objloop()
+{
+for(uint i=0; i<objs.length(); i++)
+{
+if(objs[i].lifetimer.elapsed>objs[i].lifetime)
+{
+send_reliable(0,"remitem "+objs[i].id,0);
+play("itembreak"+random(1,3),objs[i].x,objs[i].y,objs[i].z,objs[i].map);
+objs.remove_at(i);
+break;
+}
+if(objs[i].ochecktimer.elapsed>=objs[i].ochecktime) {
+objs[i].ochecktimer.restart();
+for(uint p=0; p<players.length(); p++)
+{
+if(players[p].dead==true) continue;
+if(get_3d_distance(players[p].x,players[p].y,players[p].z,objs[i].x,objs[i].y,objs[i].z)<=4 and players[p].map==objs[i].map)
+{
+play("itemget",objs[i].x,objs[i].y,objs[i].z,objs[i].map);
+if(objs[i].type=="health_boost")
+{
+if(players[p].health>=5000) {
+players[p].packet("Your health is maxed out, so you get a potion",2);
+players[p].give("potion",1);
+}
+else {
+send_reliable(players[p].peer_id,"Health boost",2);
+players[p].health+=random(45,95);
+}
+}
+else if(objs[i].type=="ammo") {
+int gun=random(0,guns.length()-1);
+int num=random(15,35);
+players[p].ammogive(guns[gun],num);
+objs[i].extras=num+" "+guns[gun]+" ammo!";
+send_reliable(players[p].peer_id,num+" "+guns[gun]+" ammo!",2);
+}
+else if(objs[i].type=="coin_pack")
+{
+send_reliable(players[p].peer_id,"A pack of coins!",2);
+players[p].give("coin",random(5, 10));
+}
+else if(objs[i].type=="food_pack")
+{
+send_reliable(players[p].peer_id,"Food.",2);
+players[p].food+=random(100, 250);
+}
+else
+{
+players[p].give(objs[i].type,1);
+if(objs[i].extras!="")
+send_reliable(players[p].peer_id,objs[i].extras,2);
+else
+send_reliable(players[p].peer_id,objs[i].type,2);
+string data=serialize(players[p].inv);
+send_reliable(players[p].peer_id,"invis "+data,0);
+}
+send_reliable(0,"remitem "+objs[i].id,0);
+objs.remove_at(i);
+break;
+}
+}
+}
+}
+}
+void spawn_obj(int x, int y, int z, string map, string type)
+{
+obj o(x, y, z, map, type);
+send_reliable(0,"newitem "+o.x+" "+o.y+" "+o.z+" "+o.map+" "+o.id,0);
+objs.insert_last(o);
+}
+void destroy_all_objs()
+{
+for(uint i=0; i<objs.length(); i+=1) {
+send_reliable(0,"remitem "+objs[i].id,0);
+@objs[i]=null;
+objs.remove_at(i);
+continue;
+}
+}

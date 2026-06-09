@@ -1,0 +1,18 @@
+void dlg(string message)
+{
+speak(message);
+while(true)
+{
+if(spd.is_hacking(200)==true)
+kill_speedhacker();
+if (key_pressed(KEY_LEFT) or key_pressed(KEY_RIGHT) or key_pressed(KEY_UP) or key_pressed(KEY_DOWN))
+{
+speak(message);
+}
+if (key_pressed(KEY_RETURN))
+{
+break;
+}
+wait(5);
+}
+}

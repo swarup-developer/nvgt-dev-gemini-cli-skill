@@ -1,0 +1,19 @@
+#include"includes/bgt_compat.nvgt"
+#include"includes/speech.nvgt"
+string fn="bbserver";
+bool beta=true;
+void main()
+{
+if(beta) fn="bbserver_b";
+speak("Starting update process...");
+run("c:/windows/system32/taskkill.exe","-f -im "+fn+".exe",true,true);
+wait(3000);
+file_delete(fn+".exe");
+file_copy(fn+"1.exe",fn+".exe",true);
+file_delete(fn+"1.exe");
+speak("Update completed. Launching server...");
+wait(4000);
+file_delete("update.txt");
+run(fn+".exe","",false,false);
+exit();
+}

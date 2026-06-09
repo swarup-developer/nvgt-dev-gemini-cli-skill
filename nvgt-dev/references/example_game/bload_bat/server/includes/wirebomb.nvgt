@@ -1,0 +1,65 @@
+wirebomb@[] wirebombs(0);
+class wirebomb
+{
+string owner;
+int z;
+string map;
+int x, y;
+bool d=false;
+int pindex=-1;
+int range=6;
+wirebomb(int wx,int wy,int wz, string wmap, string wowner)
+{
+owner=wowner;
+x=wx;
+y=wy;
+z=wz;
+map=wmap;
+play("wirebombplace",x,y,z,map);
+}
+}
+void wirebombloop()
+{
+for (uint i=0; i<wirebombs.length(); i++)
+{
+if(wirebombs[i].d==false)
+{
+for(uint px=0; px<players.length(); px++)
+{
+if(players[px].dead or players[px].safe or players[px].name==wirebombs[i].owner) continue;
+if(get_3d_distance(wirebombs[i].x,wirebombs[i].y,wirebombs[i].z,players[px].x,players[px].y,players[px].z)<=wirebombs[i].range and wirebombs[i].map==players[px].map)
+{
+wirebombs[i].d=true;
+}
+}
+}
+if(wirebombs[i].d==true)
+{
+play("wirebomb",wirebombs[i].x,wirebombs[i].y,wirebombs[i].z,wirebombs[i].map);
+send_reliable(0,"distsound wirebombdist "+wirebombs[i].x+" "+wirebombs[i].y+" "+wirebombs[i].z+" "+wirebombs[i].map,0);
+for (uint i2=0; i2<players.length(); i2++)
+{
+if(players[i2].safe or players[i2].dead) continue;
+if (get_3d_distance(wirebombs[i].x,wirebombs[i].y,wirebombs[i].z,players[i2].x,players[i2].y,players[i2].z)<=10 and players[i2].map==wirebombs[i].map)
+{
+players[i2].stun(5000);
+players[i2].health-=random(50, 120);
+players[i2].hitby=wirebombs[i].owner+"'s wirebomb";
+play("wirebombhit",players[i2].x,players[i2].y,players[i2].z,players[i2].map);
+}
+}
+wirebombs.remove_at(i);
+continue;
+}
+}
+}
+void place_wirebomb(int x,int y, int z, string map,string owner)
+{
+x++;
+wirebomb bomb1(x,y,z,map,owner);
+wirebombs.insert_last(bomb1);
+}
+void destroy_all_wirebombs()
+{
+wirebombs.resize(0);
+}
