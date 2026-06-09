@@ -1,0 +1,40 @@
+// 10 - Lokal voice chat dongusu / Local voice loopback
+// Mikrofon -> Opus encode -> Opus decode -> sound.push_memory ile streaming.
+// Multiplayer voice chat hattinin tek-makine versiyonu. Kulaklik takin.
+#pragma namespace sound upcomming
+#pragma plugin king_audio_engine
+#include "speech.nvgt"
+
+void main() {
+	show_window("Voice Chat Loopback");
+	king_microphone mic;
+	mic.sample_rate = 48000;
+	mic.channels = 1;
+	mic.buffer_length = 1.0;
+	mic.gain = 100;
+	if (!mic.start()) { speak("Mic basarisiz"); wait(2000); exit(); }
+
+	int enc = opus_encoder_create(48000, 1);    // 24 kbps default
+	int dec = opus_decoder_create(48000, 1);
+	opus_encoder_set_packet_loss(enc, 5);
+
+	sound out;                                  // streaming oynatma kanali
+	speak("Konusun. Sesiniz Opus'tan gecip geri oynatiliyor. Escape cik.");
+
+	while (!key_pressed(KEY_ESCAPE)) {
+		string pcm = mic.get_data();
+		if (pcm.length() > 0) {
+			string pkt = opus_encode(enc, pcm);
+			if (pkt.length() > 0) {
+				string back = opus_decode(dec, pkt);
+				if (back.length() > 0)
+					out.push_memory(back, false, 48000, 1);
+			}
+		}
+		wait(20);
+	}
+
+	opus_encoder_destroy(enc);
+	opus_decoder_destroy(dec);
+	mic.stop();
+}

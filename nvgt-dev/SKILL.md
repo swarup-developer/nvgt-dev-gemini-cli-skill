@@ -51,4 +51,10 @@ references/BGT dock.md is for users who want to convert a BGT game to nvgt; plea
 In general, when you start working, read the available documentation.
 Don't forget the small guidelines; they are very important.
 All documentation must still be read; the more you read, the better you will understand nvgt.
-suggestion: you should refer to references/example_game, and the subfolders within it, and even the .nvgt files, as they are very helpful for game development, this is the structure of an online survival game
+Especially, you should read the folders and files in references/example_game to understand how developers structure their games.
+
+## Regarding community-contributed resources, not official nvgt libraries:
+
+You can check the references/resources directory; it compiles libraries/plugins that you can integrate into the game, it's very useful.
+
+If you want to generally check what role each library/plugin plays, see resources.md in the resources directory.

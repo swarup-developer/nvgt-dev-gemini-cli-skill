@@ -1,0 +1,29 @@
+// 09 - FX zinciri / Effect chain
+// load -> set_fx -> play sirasini gosterir, ID ile efekt guncelleme
+#pragma namespace sound upcomming
+#pragma plugin king_audio_engine
+#include "speech.nvgt"
+
+void main() {
+	show_window("FX Chain Demo");
+	sound s;
+	if (!s.load("step_sounds/sandstep1.ogg")) { speak("Yuklenemedi"); wait(2000); exit(); }
+
+	// Onemli: set_fx mutlaka load() sonrasi, play() oncesi
+	s.set_fx("$verb:reverb:2000:10:30:5000:50:80:80:200:0:8000:60:0:-12");   // ID="$verb"
+	s.set_fx("$lp:lowpass:8000:1");                                           // ID="$lp"
+	s.play_looped();
+
+	speak("Reverb + lowpass acik. 1 lowpass kapat, 2 lowpass ac, 3 reverb kapat, 4 reverb yenile, Escape cik.");
+
+	while (!key_pressed(KEY_ESCAPE)) {
+		wait(10);
+		// Calmaya devam ederken efektler dinamik degisebilir (set_fx burada
+		// "yeniden yukleme" yapmiyor, sadece DSP slotlarini ekler/cikarir).
+		if (key_pressed(KEY_1)) { s.set_fx("$lp"); speak("lowpass kapali"); }
+		if (key_pressed(KEY_2)) { s.set_fx("$lp:lowpass:1500:2"); speak("lowpass: 1500 Hz"); }
+		if (key_pressed(KEY_3)) { s.set_fx("$verb"); speak("reverb kapali"); }
+		if (key_pressed(KEY_4)) { s.set_fx("$verb:reverb:4000:20:60:3000:40:60:80:200:0:5000:30:-3:-12"); speak("derin reverb"); }
+	}
+	s.stop();
+}

@@ -1,0 +1,73 @@
+// 06 - 3D hareket + sound_pool / 3D listener movement with sound_pool
+// Sabit bir sesin etrafinda dolasin. HRTF, convolution reverb deneyin.
+//
+// HATA DUZELTMESI: orijinal test "pool.output_mixer = mix" kullaniyordu;
+// dogrusu pool.mixer @-handle ile atanir.
+#pragma namespace sound upcomming
+#pragma plugin king_audio_engine
+#include "speech.nvgt"
+#include "sound_pool.nvgt"
+#include "rotation.nvgt"
+
+sound_pool pool;
+mixer mix;
+double p_x = 0;
+double p_y = 0;
+double p_z = 0;
+double rotation = 0;
+string[] ir_files = {"ir_small_room.wav", "ir_large_hall.wav", "ir_cave.wav", "ir_bathroom.wav"};
+string[] ir_names = {"Kucuk Oda", "Buyuk Salon", "Magara", "Banyo"};
+int current_ir = -1;
+
+void main() {
+	show_window("3D Distance Test");
+	@pool.mixer = @mix;             // dogru property adi
+	int source_x = 0;
+	int source_y = 10;
+	int snd = pool.play_3d("step_sounds/sandstep1.ogg", null, p_x, p_y, p_z, source_x, source_y, 0, 0, true, true);
+	if (snd < 0) { speak("Ses yuklenemedi"); wait(2000); return; }
+	speak("Kaynak x " + source_x + " y " + source_y +
+	      ". Oklar yuru, Q E don, H hrtf, R convolution reverb degistir, T reverb kapat. Escape cik.");
+
+	while (!key_pressed(KEY_ESCAPE)) {
+		wait(5);
+		bool moved = false, rotated = false;
+
+		if (key_pressed(KEY_UP))    { vector p = move(p_x, p_y, p_z, rotation, 0,   0, 0); p_x = p.x; p_y = p.y; p_z = p.z; moved = true; }
+		if (key_pressed(KEY_DOWN))  { vector p = move(p_x, p_y, p_z, rotation, 0, 180, 0); p_x = p.x; p_y = p.y; p_z = p.z; moved = true; }
+		if (key_pressed(KEY_RIGHT)) { vector p = move(p_x, p_y, p_z, rotation, 0,  90, 0); p_x = p.x; p_y = p.y; p_z = p.z; moved = true; }
+		if (key_pressed(KEY_LEFT))  { vector p = move(p_x, p_y, p_z, rotation, 0, 270, 0); p_x = p.x; p_y = p.y; p_z = p.z; moved = true; }
+		if (key_pressed(KEY_PAGEUP))   { p_z++; moved = true; }
+		if (key_pressed(KEY_PAGEDOWN)) { p_z--; moved = true; }
+		if (key_pressed(KEY_Q)) { rotation = turnleft(rotation, 45);  rotated = true; }
+		if (key_pressed(KEY_E)) { rotation = turnright(rotation, 45); rotated = true; }
+
+		if (moved or rotated)
+			pool.update_listener_3d(p_x, p_y, p_z, rotation);
+
+		if (key_pressed(KEY_H)) {
+			pool.hrtf = !pool.hrtf;
+			pool.destroy_all();
+			snd = pool.play_3d("step_sounds/sandstep1.ogg", null, p_x, p_y, p_z, source_x, source_y, 0, 0, true, true);
+			pool.update_listener_3d(p_x, p_y, p_z, rotation);
+			speak("HRTF " + (pool.hrtf ? "acik" : "kapali"));
+		}
+		if (key_pressed(KEY_R)) {
+			current_ir++;
+			if (current_ir >= int(ir_files.length())) current_ir = 0;
+			bool ok = mix.set_convolution(ir_files[current_ir]);
+			speak(ok ? "Convolution: " + ir_names[current_ir] : "IR yuklenemedi: " + ir_files[current_ir]);
+		}
+		if (key_pressed(KEY_T)) {
+			mix.remove_reverb();
+			current_ir = -1;
+			speak("Reverb kapatildi");
+		}
+		if (key_pressed(KEY_C)) {
+			double dx = p_x - source_x, dy = p_y - source_y;
+			double dist = sqrt(dx * dx + dy * dy + p_z * p_z);
+			speak("x " + round(p_x, 1) + " y " + round(p_y, 1) + " z " + round(p_z, 1) +
+			      ". Yon: " + round(rotation, 0) + " derece. Mesafe: " + round(dist, 1));
+		}
+	}
+}

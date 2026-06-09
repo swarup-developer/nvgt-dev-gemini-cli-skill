@@ -1,0 +1,45 @@
+// 05 - Opus codec / Opus sıkıstirma
+// Mikrofondan 5 sn yakalayip Opus ile sıkıştırır, geri açıp oynatır.
+#pragma namespace sound upcomming
+#pragma plugin king_audio_engine
+
+void main() {
+	show_window("Opus Codec Test (VoIP defaults)");
+
+	king_microphone mic;
+	mic.buffer_length = 5.0;
+	mic.sample_rate = 48000;
+	mic.channels = 1;
+
+	alert("Opus Test", "Press OK to start recording (5 sec buffer).");
+	if (!mic.start()) { alert("Error", "Mic start failed"); exit(); }
+	alert("Recording", "Speak. Press OK when done.");
+
+	string pcm = mic.get_data();
+	mic.stop();
+	int pcm_size = pcm.length();
+	alert("PCM", "Raw PCM: " + pcm_size + " bytes");
+
+	// Encode (24 kbps, 20 ms, VBR + FEC + DTX by default)
+	int enc = opus_encoder_create(48000, 1);
+	if (enc == 0) { alert("Error", "Encoder create failed"); exit(); }
+	string encoded = opus_encode(enc, pcm);
+	opus_encoder_destroy(enc);
+
+	float ratio = pcm_size > 0 ? (float(encoded.length()) / float(pcm_size)) * 100.0 : 0;
+	alert("Encoded", "Encoded: " + encoded.length() + " bytes (%" + ratio + " of original)");
+
+	// Decode
+	int dec = opus_decoder_create(48000, 1);
+	string decoded = opus_decode(dec, encoded);
+	opus_decoder_destroy(dec);
+	alert("Decoded", "Decoded PCM: " + decoded.length() + " bytes");
+
+	// Play
+	sound s;
+	if (s.load_pcm(decoded, 48000, 1)) {
+		s.play();
+		alert("Playing", "Press OK to stop.");
+		s.stop();
+	}
+}

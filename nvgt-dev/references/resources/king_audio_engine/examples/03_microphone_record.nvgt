@@ -1,0 +1,39 @@
+// 03 - Mikrofon kayit / Microphone recording
+// Kayit yapar, dosyaya kaydeder, geri oynatir.
+#pragma namespace sound upcomming
+#pragma plugin king_audio_engine
+
+void main() {
+	show_window("Microphone Test");
+	king_microphone mic;
+	mic.buffer_length = 10.0;        // 10 sn ring buffer
+	mic.sample_rate = 48000;
+	mic.channels = 1;
+	mic.gain = 100;                  // 100 = normal, 0..200
+
+	alert("Info", "Input devices: " + sound_input_devices.length() +
+	              "\nSample rate: " + mic.sample_rate +
+	              "\nChannels: "    + mic.channels +
+	              "\nBuffer: "      + mic.buffer_length + "s\n\nPress OK to start recording.");
+
+	if (!mic.start()) {
+		alert("Error", "Could not start recording!");
+		exit();
+	}
+	alert("Recording", "Speak into your microphone. Press OK when done.");
+
+	string save_path = "test_recording.wav";
+	if (mic.save(save_path))
+		alert("Saved", "Saved to " + save_path);
+	else
+		alert("Error", "Save failed.");
+	mic.stop();
+
+	alert("Playback", "Press OK to play it back.");
+	sound s;
+	if (s.load(save_path)) {
+		s.play();
+		alert("Playing", "Press OK to stop.");
+		s.stop();
+	}
+}

@@ -1,0 +1,53 @@
+// 08 - Sound environment duvarlar / Sound environment walls
+// Y=4..5 araliginda bir duvar; karsiya gecince ses bogularak gelir.
+#pragma namespace sound upcomming
+#pragma plugin king_audio_engine
+#include "speech.nvgt"
+#include "rotation.nvgt"
+
+double p_x = 0, p_y = 0, p_z = 0, rotation = 0;
+int source_x = 3, source_y = 15, source_z = 0;
+
+void main() {
+	show_window("Occlusion Test");
+	king_global_hrtf = true;
+	sound_environment_add_wall(-5, 10, 4, 5, -5, 10, "stone");
+
+	sound src;
+	src.set_hrtf(true);
+	src.load("step_sounds/sandstep1.ogg");
+	src.play_looped();
+	src.set_position(p_x, p_y, p_z, source_x, source_y, source_z, rotation, 1.0, 1.0);
+
+	speak("Kaynak x" + source_x + " y" + source_y + ". Duvar y4..5. Oklar yuru, Q/E don, F duvar kontrol, D debug, R reset, Escape cik.");
+
+	while (!key_pressed(KEY_ESCAPE)) {
+		wait(5);
+		bool moved = false, rotated = false;
+		if (key_pressed(KEY_UP))    { vector p = move(p_x, p_y, p_z, rotation, 0,   0, 0); p_x = p.x; p_y = p.y; p_z = p.z; moved = true; }
+		if (key_pressed(KEY_DOWN))  { vector p = move(p_x, p_y, p_z, rotation, 0, 180, 0); p_x = p.x; p_y = p.y; p_z = p.z; moved = true; }
+		if (key_pressed(KEY_RIGHT)) { vector p = move(p_x, p_y, p_z, rotation, 0,  90, 0); p_x = p.x; p_y = p.y; p_z = p.z; moved = true; }
+		if (key_pressed(KEY_LEFT))  { vector p = move(p_x, p_y, p_z, rotation, 0, 270, 0); p_x = p.x; p_y = p.y; p_z = p.z; moved = true; }
+		if (key_pressed(KEY_PAGEUP))   { p_z++; moved = true; }
+		if (key_pressed(KEY_PAGEDOWN)) { p_z--; moved = true; }
+		if (key_pressed(KEY_Q)) { rotation = turnleft(rotation, 45);  rotated = true; }
+		if (key_pressed(KEY_E)) { rotation = turnright(rotation, 45); rotated = true; }
+
+		if (moved or rotated)
+			src.set_position(p_x, p_y, p_z, source_x, source_y, source_z, rotation, 1.0, 1.0);
+
+		if (key_pressed(KEY_F)) {
+			int walls = sound_environment_check_wall(p_x, p_y, p_z, source_x, source_y, source_z);
+			speak(walls > 0 ? walls + " duvar arada" : "Yol acik");
+		}
+		if (key_pressed(KEY_D)) speak(sound_environment_debug());
+		if (key_pressed(KEY_R)) { p_x = p_y = p_z = 0; rotation = 0; src.set_position(p_x, p_y, p_z, source_x, source_y, source_z, rotation, 1.0, 1.0); speak("Reset"); }
+		if (key_pressed(KEY_C)) {
+			double dx = p_x - source_x, dy = p_y - source_y, dz = p_z - source_z;
+			speak("x" + round(p_x, 1) + " y" + round(p_y, 1) + " z" + round(p_z, 1) +
+			      " Yon: " + round(rotation, 0) + " Mesafe: " + round(sqrt(dx*dx + dy*dy + dz*dz), 1));
+		}
+	}
+	src.stop();
+	sound_environment_reset();
+}

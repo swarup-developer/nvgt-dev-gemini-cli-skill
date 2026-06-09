@@ -1,0 +1,29 @@
+// 07 - Master EQ canli ayar / Master EQ live tweak
+#pragma namespace sound upcomming
+#pragma plugin king_audio_engine
+#include "speech.nvgt"
+
+void main() {
+	show_window("Master EQ Test");
+	king_global_hrtf = true;
+
+	sound src;
+	src.set_hrtf(true);
+	src.load("step_sounds/sandstep1.ogg");
+	src.play_looped();
+
+	speak("UP/DOWN bass, M/N mid, H/L high, R reset, C durum, Escape cik.");
+
+	while (!key_pressed(KEY_ESCAPE)) {
+		wait(5);
+		if (key_pressed(KEY_UP))    { sound_master_eq_low  += 1; speak("Bass: " + sound_master_eq_low); }
+		if (key_pressed(KEY_DOWN))  { sound_master_eq_low  -= 1; speak("Bass: " + sound_master_eq_low); }
+		if (key_pressed(KEY_M))     { sound_master_eq_mid  += 1; speak("Mid: "  + sound_master_eq_mid); }
+		if (key_pressed(KEY_N))     { sound_master_eq_mid  -= 1; speak("Mid: "  + sound_master_eq_mid); }
+		if (key_pressed(KEY_H))     { sound_master_eq_high += 1; speak("High: " + sound_master_eq_high); }
+		if (key_pressed(KEY_L))     { sound_master_eq_high -= 1; speak("High: " + sound_master_eq_high); }
+		if (key_pressed(KEY_R))     { sound_master_eq(0, 0, 0); speak("EQ sifirlandi"); }
+		if (key_pressed(KEY_C))     { speak("Bass: " + sound_master_eq_low + ", Mid: " + sound_master_eq_mid + ", High: " + sound_master_eq_high); }
+	}
+	src.stop();
+}

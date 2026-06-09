@@ -1,0 +1,164 @@
+#include "rotation.nvgt"
+// encoder_plugin replaced by king_audio_engine opus codec
+array<voice_chat@>voice_chats();
+class voice_chat
+{
+float x,y,z;
+double behind_pitch_decrease=5.0,start_pitch=100.0;
+string map,name;
+int stream_id;
+sound s;
+string last_fx_data;
+timer voice_timeout;
+bool receiving=false;
+voice_chat (float x1,float y1,float z1,string name1,string map1)
+{
+this.x=x1;
+this.y=y1;
+this.z=z1;
+this.name=name1;
+this.map=map1;
+this.stream_id = opus_decoder_create(48000, 1);
+s.set_hrtf(true);
+}
+~voice_chat()
+{
+opus_decoder_destroy(this.stream_id);
+if(s.active) s.close();
+}
+void update_listener_position(float listener_x, float listener_y, float listener_z, double rotation)
+{
+// Veri gelmiyorsa sesi durdur (300ms timeout)
+if (receiving && voice_timeout.elapsed >= 300)
+{
+this.stop_stream();
+}
+if (s.active == false)
+return;
+float delta_left = this.x;
+float delta_right = this.x;
+float delta_backward = this.y;
+float delta_forward = this.y;
+float delta_lower = this.z;
+float delta_upper = this.z;
+vector true_pos(listener_x, listener_y, listener_z);
+if (listener_x < delta_left)
+true_pos.x = delta_left;
+else if (listener_x >= delta_right)
+true_pos.x = delta_right;
+if (listener_y < delta_backward)
+true_pos.y = delta_backward;
+else if (listener_y >= delta_forward)
+true_pos.y = delta_forward;
+if (listener_z < delta_lower)
+true_pos.z = delta_lower;
+else if (listener_z >= delta_upper)
+true_pos.z = delta_upper;
+// king_audio expects degrees, converts to radians internally
+s.set_position(listener_x, listener_y, listener_z, this.x, this.y, this.z, rotation, 1.0, 1.0);
+// If at same position, no spatialization needed
+if (true_pos.x == listener_x and true_pos.y == listener_y and true_pos.z == listener_z) {
+s.pitch = start_pitch;
+return;
+}
+float pitch = this.start_pitch;
+float dx = this.x - listener_x;
+float dy = this.y - listener_y;
+float cos_r = cos(rotation);
+float sin_r = sin(rotation);
+float local_y = dx * sin_r + dy * cos_r;
+if (local_y < 0) pitch -= this.behind_pitch_decrease;
+s.pitch = pitch;
+}
+void apply_effects(string[]@ fx_list)
+{
+string fx_data;
+if(@fx_list != null)
+{
+for(uint i=0; i<fx_list.length(); i++)
+{
+if(i>0) fx_data+="|";
+fx_data+=fx_list[i];
+}
+}
+if (fx_data == this.last_fx_data) return;
+s.set_fx("");
+this.last_fx_data = fx_data;
+if(@fx_list == null || fx_list.length() == 0) return;
+for(uint i=0; i<fx_list.length(); i++)
+{
+s.set_fx(fx_list[i]);
+}
+}
+void stop_stream() {
+if(s.active) s.close();
+receiving=false;
+}
+void push_voice_data(string data) {
+float dx = this.x - me.x;
+float dy = this.y - me.y;
+float dz = this.z - me.z;
+if (dx*dx + dy*dy + dz*dz > 2500) return;
+if (data.length() == 0) return;
+// Decode opus directly to PCM16 string (no float conversion needed)
+string pcm_str = opus_decode(this.stream_id, data);
+if (pcm_str.length() == 0)
+ {
+ this.stop_stream();
+ return;
+}
+bool was_inactive = !this.s.active;
+voice_timeout.restart();
+receiving=true;
+this.s.push_memory(pcm_str, false, 48000, 1);
+if(was_inactive)
+{
+s.set_hrtf(true);
+float dx = this.x - me.x;
+float dy = this.y - me.y;
+float dz = this.z - me.z;
+if(dx != 0 or dy != 0 or dz != 0)
+{
+s.set_position(me.x, me.y, me.z, this.x, this.y, this.z, facing, 1.0, 1.0);
+}
+}
+}
+}
+void spawn_voice_chat(int x,int y,int z,string name,string map)
+{
+voice_chat vc(x,y,z,name,map);
+voice_chats.insert_last(vc);
+update_voice_chat(name, x,y,z,map);
+}
+void remove_voice_chat(string username)
+{
+for(uint i=0; i<voice_chats.length(); i++)
+{
+if(voice_chats[i].name==username)
+{
+opus_decoder_destroy(voice_chats[i].stream_id);
+if(voice_chats[i].s.active) voice_chats[i].s.close();
+voice_chats.remove_at(i);
+}
+}
+}
+void update_voice_chat(string n, int x,int y,int z, string m)
+{
+for(uint i=0; i<voice_chats.length(); i++)
+{
+if(voice_chats[i].name==n)
+{
+voice_chats[i].x=x;
+voice_chats[i].y=y;
+voice_chats[i].z=z;
+voice_chats[i].map=m;
+voice_chats[i].apply_effects(map_get_fx_list_from_location(voice_chats[i].map, voice_chats[i].x, voice_chats[i].y, voice_chats[i].z));
+}
+}
+}
+int get_voice_chat_index(string n) {
+for(uint i=0; i<voice_chats.length(); i+=1) {
+if(voice_chats[i].name==n) return i;
+}
+return -1;
+}

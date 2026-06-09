@@ -1,0 +1,21 @@
+// 02 - Cihaz listesi / Device enumeration
+#pragma namespace sound upcomming
+#pragma plugin king_audio_engine
+#pragma console
+
+void main() {
+	println("SOUND_AVAILABLE: " + SOUND_AVAILABLE);
+	println("");
+	println("=== OUTPUT DEVICES ===");
+	println("Count: " + sound_output_device_count + ", current: " + sound_output_device);
+	string[]@ outs = sound_output_devices;
+	for (uint i = 0; i < outs.length(); i++)
+		println("  " + i + ": " + outs[i]);
+
+	println("");
+	println("=== INPUT DEVICES (microphones) ===");
+	string[]@ ins = sound_input_devices;
+	println("Count: " + ins.length() + ", current: " + sound_input_device);
+	for (uint i = 0; i < ins.length(); i++)
+		println("  " + i + ": " + ins[i]);
+}

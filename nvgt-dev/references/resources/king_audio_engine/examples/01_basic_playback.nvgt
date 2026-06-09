@@ -1,0 +1,15 @@
+// 01 - Temel oynatma / Basic playback
+// Bir ses yükle, çal, bitmesini bekle.
+#pragma namespace sound upcomming
+#pragma plugin king_audio_engine
+
+void main() {
+	show_window("Basic Playback");
+	sound s;
+	if (!s.load("step_sounds/sandstep1.ogg")) {
+		alert("Hata", "Dosya yuklenemedi");
+		exit();
+	}
+	s.play_wait();
+	alert("Bitti", "Ses oynatildi.");
+}

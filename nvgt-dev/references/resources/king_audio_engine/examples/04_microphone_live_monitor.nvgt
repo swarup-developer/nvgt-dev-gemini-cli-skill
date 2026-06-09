@@ -1,0 +1,26 @@
+// 04 - Canli mikrofon dinleme / Live mic monitor
+// Mikrofonunuzu hoparlordan duyarsiniz. Kulaklik kullanin.
+#pragma namespace sound upcomming
+#pragma plugin king_audio_engine
+#include "speech.nvgt"
+
+void main() {
+	show_window("Live Mic Monitor");
+	king_microphone mic;
+	mic.sample_rate = 48000;
+	mic.channels = 1;
+	mic.buffer_length = 1.0;         // dusuk gecikme
+	mic.gain = 120;                  // hafif boost
+
+	if (!mic.start()) { speak("Mic basarisiz"); wait(2000); exit(); }
+	mic.play_back();
+	speak("Mikrofon acik. UP/DOWN gain. Escape cik.");
+
+	while (!key_pressed(KEY_ESCAPE)) {
+		wait(10);
+		if (key_pressed(KEY_UP))   { mic.gain += 10; speak("gain " + mic.gain); }
+		if (key_pressed(KEY_DOWN)) { mic.gain -= 10; speak("gain " + mic.gain); }
+	}
+	mic.stop_playback();
+	mic.stop();
+}
