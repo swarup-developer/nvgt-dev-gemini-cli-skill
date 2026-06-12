@@ -58,3 +58,13 @@ Especially, you should read the folders and files in references/example_game to 
 You can check the references/resources directory; it compiles libraries/plugins that you can integrate into the game, it's very useful.
 
 If you want to generally check what role each library/plugin plays, see resources.md in the resources directory.
+
+## top priority, should be:
+
+I have placed the nvgt source code in the references/nvgt_src directory for the purpose of easily reading the nvgt source code on the local machine instead of having to clone it from GitHub.
+
+You can easily use your tools to view the nvgt source code offline.
+
+Please prioritize viewing local source code instead of having to clone from GitHub.
+
+Documentation is sometimes not as complete as reading the syntax directly in the nvgt source code, so you should prioritize reading both the documentation and the source code rather than just the documentation; this will help you code nvgt better.
