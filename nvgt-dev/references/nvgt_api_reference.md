@@ -258,6 +258,18 @@ This document contains the API definitions automatically extracted from the NVGT
 - `float tanf(float x)`
 - `float tanh(float x)`
 - `float trunc(float x)`
+- `funcdef bool coordinate_map_filter_callback(coordinate_map_area@)`
+- `funcdef float physics_raycast_callback(const raycast_info&in info)`
+- `funcdef int pathfinder_callback(int, int, int, any@ = null)`
+- `funcdef int pathfinder_callback_ex(int, int, int, int, int, int, any@ = null)`
+- `funcdef int pathfinder_callback_legacy(int, int, int, int, string)`
+- `funcdef uint timer_callback(string timer_id, string user_data)`
+- `funcdef void android_permission_request_callback(string permission, bool granted, string user_data)`
+- `funcdef void audio_engine_processing_callback(audio_engine@ engine, memory_buffer<float>& data, uint64 frames)`
+- `funcdef void physics_collision_callback(const physics_collision_callback_data& data)`
+- `funcdef void physics_overlap_callback(const physics_overlap_callback_data& data)`
+- `funcdef void system_tray_callback(system_tray_menu_item@ item)`
+- `funcdef void thread_callback(dictionary@ args)`
 - `game_window@ show_window(const string& in title, uint flags = 0)`
 - `game_window@+ get_window() property`
 - `graphic@ create_surface(int width, int height, pixel_format pixel_format)`
@@ -2191,6 +2203,8 @@ This document contains the API definitions automatically extracted from the NVGT
 - `void set_to_zero()`
 
 ### Class `random_gamerand`
+
+### Class `random_generator`
 
 ### Class `random_interface`
 

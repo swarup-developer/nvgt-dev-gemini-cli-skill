@@ -14,6 +14,10 @@
 - `bool get_sound_global_hrtf() property`
 - `bool pack_set_global_identifier(const string&in)`
 - `float get_sound_master_volume() property`
+- `funcdef bool sound_seek_callback(uint, string)`
+- `funcdef int sound_read_callback(string &out, uint, string)`
+- `funcdef uint sound_length_callback(string)`
+- `funcdef void sound_close_callback(string)`
 - `uint get_sound_input_device() property`
 - `uint get_sound_input_device_count() property`
 - `uint get_sound_output_device() property`
