@@ -119,15 +119,6 @@
 ## Plugin: `redis`
 **Syntax to use:** `#pragma plugin("redis")`
 
-### Enums
-#### `redis_type`
-- `REDIS_TYPE_HASH`
-- `REDIS_TYPE_LIST`
-- `REDIS_TYPE_NONE`
-- `REDIS_TYPE_SET`
-- `REDIS_TYPE_STRING`
-- `REDIS_TYPE_ZSET`
-
 ### Classes
 #### Class `blocking_redis_subscriber`
 ##### Behaviours / Constructors
@@ -315,6 +306,15 @@
 - `bool get_is_string() const property`
 - `int64 get_integer() const`
 - `string get_string() const`
+
+### Enums
+#### Enum `redis_type`
+- `REDIS_TYPE_HASH`
+- `REDIS_TYPE_LIST`
+- `REDIS_TYPE_NONE`
+- `REDIS_TYPE_SET`
+- `REDIS_TYPE_STRING`
+- `REDIS_TYPE_ZSET`
 
 ---
 ## Plugin: `systemd_notify`
