@@ -1688,9 +1688,9 @@ This document contains the API definitions automatically extracted from the NVGT
 - `bool automatic_reset`
 - `const bool solving`
 - `const float total_cost`
-- `int desperation_factor`
 - `int search_range`
 ##### Methods
+- `int get_desperation_factor() const property`
 - `vector[]@ find(int, int, int, int, int, int, any@+ = null)`
 - `vector[]@ find(int, int, int, int, string = \`
 - `void cancel()`
@@ -1698,6 +1698,7 @@ This document contains the API definitions automatically extracted from the NVGT
 - `void set_callback_function(pathfinder_callback@)`
 - `void set_callback_function(pathfinder_callback_ex@)`
 - `void set_callback_function(pathfinder_callback_legacy@)`
+- `void set_desperation_factor(int factor) property`
 
 ### Class `phonon_binaural_node`
 ##### Behaviours / Constructors
