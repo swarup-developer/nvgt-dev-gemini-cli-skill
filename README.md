@@ -1,6 +1,6 @@
-# NVGT Development Skill for Gemini (Antigravity) and Claude
+# NVGT Development Skill for Gemini (Antigravity), Claude, and Codex
 
-This repository contains the `nvgt-dev` skill, which provides NVGT (NonVisual Game Toolkit) development capabilities for both the Antigravity CLI (Gemini) and Claude Code.
+This repository contains the `nvgt-dev` skill, which provides NVGT (NonVisual Game Toolkit) development capabilities for the Antigravity CLI (Gemini), Claude Code, and Codex CLI.
 
 ## Manual Installation Guide
 
@@ -18,6 +18,13 @@ Copy the `nvgt-dev` folder into your global Claude skills directory:
 So the final path of the skill will be:
 `C:\Users\<Your_Username>\.claude\skills\nvgt-dev`
 
+### For Codex CLI
+Copy the `nvgt-dev` folder into your global Codex skills directory:
+`C:\Users\<Your_Username>\.codex\skills`
+
+So the final path of the skill will be:
+`C:\Users\<Your_Username>\.codex\skills\nvgt-dev`
+
 ## Automatic Installation
 
 We provide batch scripts to automate the installation process on Windows.
@@ -31,3 +38,8 @@ We provide batch scripts to automate the installation process on Windows.
 1. Run `claude_install.bat`.
 2. It will automatically create the required directories and copy the skill files.
 3. Restart Claude Code to load the skill.
+
+### For Codex CLI
+1. Run `codex_install.bat`.
+2. It will automatically create the required directories and copy the skill files.
+3. Restart Codex CLI to load the skill.
